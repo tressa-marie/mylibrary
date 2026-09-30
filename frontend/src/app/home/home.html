@@ -1,0 +1,31 @@
+<section class="welcome" aria-labelledby="welcome-title">
+  <p class="eyebrow">A new chapter</p>
+  <h1 id="welcome-title">Welcome to My Library</h1>
+  <p class="intro">A little space for your reading life. Your library starts here.</p>
+</section>
+
+<section class="status-card" aria-labelledby="status-title">
+  <div>
+    <p class="eyebrow">Application status</p>
+    <h2 id="status-title">Connection</h2>
+    <div role="status" aria-live="polite" aria-atomic="true">
+      @switch (connection()) {
+        @case ('checking') {
+          <p class="status"><span class="dot"></span>Checking connection…</p>
+          <p class="detail">Connecting to My Library.</p>
+        }
+        @case ('connected') {
+          <p class="status connected"><span class="dot"></span>Connected</p>
+          <p class="detail">My Library is online and ready.</p>
+        }
+        @case ('unavailable') {
+          <p class="status unavailable"><span class="dot"></span>Unable to connect</p>
+          <p class="detail">My Library is unavailable. Please try again in a moment.</p>
+        }
+      }
+    </div>
+  </div>
+  <button type="button" (click)="checkConnection()" [disabled]="connection() === 'checking'">
+    {{ connection() === 'checking' ? 'Checking…' : 'Check again' }}
+  </button>
+</section>

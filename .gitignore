@@ -1,0 +1,17 @@
+# Angular / Node
+node_modules/
+.angular/
+dist/
+coverage/
+
+# .NET
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+
+# Local files
+*.log
+.DS_Store
+Thumbs.db
