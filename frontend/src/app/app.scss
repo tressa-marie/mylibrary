@@ -31,6 +31,11 @@
   border-radius: 0.5rem;
   font-size: 0.9rem;
 }
+nav {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
 nav a {
   color: #254d3c;
   font-weight: 600;

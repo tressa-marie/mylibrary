@@ -1,0 +1,111 @@
+<section aria-labelledby="search-title">
+  <p class="eyebrow">Find your next chapter</p>
+  <h1 id="search-title">Search books</h1>
+  <p>Explore books by title, author, or ISBN and find the edition you're looking for.</p>
+  <form (ngSubmit)="search()">
+    <div>
+      <label for="search-field">Search by</label>
+      <select id="search-field" name="field" [(ngModel)]="field">
+        <option value="all">All fields</option>
+        <option value="title">Title</option>
+        <option value="author">Author</option>
+        <option value="isbn">ISBN</option>
+      </select>
+    </div>
+    <div class="term">
+      <label for="search-query">Search term</label>
+      <input
+        id="search-query"
+        name="query"
+        type="search"
+        [(ngModel)]="query"
+        maxlength="200"
+        required
+        placeholder="Title, author, or ISBN"
+      />
+    </div>
+    <button type="submit" [disabled]="!query.trim()">Search</button>
+  </form>
+  <div role="status" aria-live="polite">
+    @switch (state()) {
+      @case ('loading') {
+        <p>Searching books…</p>
+      }
+      @case ('ready') {
+        @if (books().length === 0) {
+          <p>No books found. Try another title, author, or ISBN.</p>
+        } @else {
+          <p>
+            Showing {{ books().length }} results (up to 20). Refine your search to find a specific
+            edition.
+          </p>
+        }
+      }
+    }
+  </div>
+  @if (state() === 'error') {
+    <p role="alert">We couldn't reach the book service. Please try your search again shortly.</p>
+  }
+  <ul class="results" [attr.aria-busy]="state() === 'loading'">
+    @for (book of books(); track book.id) {
+      <li class="book">
+        @if (book.coverUrl && !failedCovers().has(book.id)) {
+          <img [src]="book.coverUrl" alt="" loading="lazy" (error)="coverFailed(book.id)" />
+        } @else {
+          <div class="cover-placeholder">No cover available</div>
+        }
+        <div class="metadata">
+          <h2>
+            <button class="title" type="button" (click)="open(book, $event)">
+              {{ book.title }}
+            </button>
+          </h2>
+          @if (book.subtitle) {
+            <p>{{ book.subtitle }}</p>
+          }
+          <p>{{ book.authors.join(', ') || 'Author unavailable' }}</p>
+          <p>
+            {{ book.publicationYear || 'Year unavailable' }} ·
+            {{ book.format || 'Format unavailable' }}
+          </p>
+          @if (book.publisher) {
+            <p>{{ book.publisher }}</p>
+          }
+          <p>ISBN: {{ book.isbns.join(', ') || 'Unavailable' }}</p>
+        </div>
+      </li>
+    }
+  </ul>
+</section>
+<dialog #details aria-labelledby="detail-title" (close)="onClosed()">
+  <button class="close" type="button" (click)="close()" autofocus>Close</button>
+  @if (selected(); as book) {
+    <h2 id="detail-title">{{ book.title }}</h2>
+    @if (detailState() === 'loading') {
+      <p role="status">Loading book details…</p>
+    } @else if (detailState() === 'error') {
+      <p role="alert">Book details are unavailable. Please try again.</p>
+      <button type="button" (click)="open(book)">Retry details</button>
+    } @else {
+      @if (book.subtitle) {
+        <p>{{ book.subtitle }}</p>
+      }
+      <p>{{ book.authors.join(', ') || 'Author unavailable' }}</p>
+      <dl>
+        <dt>Publication year</dt>
+        <dd>{{ book.publicationYear || 'Unavailable' }}</dd>
+        <dt>Publisher</dt>
+        <dd>{{ book.publisher || 'Unavailable' }}</dd>
+        <dt>ISBN</dt>
+        <dd>{{ book.isbns.join(', ') || 'Unavailable' }}</dd>
+        <dt>Format</dt>
+        <dd>{{ book.format || 'Unavailable' }}</dd>
+        <dt>Pages</dt>
+        <dd>{{ book.pageCount ?? 'Unavailable' }}</dd>
+        <dt>Language</dt>
+        <dd>{{ book.language || 'Unavailable' }}</dd>
+      </dl>
+      <p class="description">{{ book.description || 'No description available.' }}</p>
+    }
+  }
+</dialog>

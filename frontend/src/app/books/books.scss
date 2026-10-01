@@ -1,0 +1,153 @@
+:host {
+  display: block;
+  padding: 2rem 0;
+}
+h1 {
+  font:
+    500 clamp(2rem, 5vw, 3rem) Georgia,
+    serif;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+}
+form {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  margin: 2rem 0;
+}
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.term {
+  flex: 1;
+}
+input,
+select,
+button {
+  font: inherit;
+  padding: 0.8rem;
+  border: 1px solid #68756b;
+  border-radius: 0.4rem;
+}
+input,
+select {
+  width: 100%;
+  background: #fffdf8;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  background: #254d3c;
+  color: white;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.results {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 27rem), 1fr));
+}
+.book {
+  display: flex;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+.book img,
+.cover-placeholder {
+  width: 90px;
+  height: 135px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.cover-placeholder {
+  display: grid;
+  place-items: center;
+  background: #eeece3;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  color: #625f57;
+}
+.metadata {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+h2 {
+  margin: 0 0 0.75rem;
+  font:
+    500 1.5rem Georgia,
+    serif;
+}
+.title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #254d3c;
+  text-align: left;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+p {
+  line-height: 1.6;
+}
+.book p {
+  margin: 0.45rem 0;
+  font-size: 0.9rem;
+}
+dialog {
+  width: min(40rem, 90vw);
+  max-height: 85vh;
+  padding: 2rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+dialog::backdrop {
+  background: #17271db3;
+}
+.close {
+  display: block;
+  margin: 0 0 1rem auto;
+}
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem 1rem;
+}
+dt {
+  font-weight: 600;
+}
+dd {
+  margin: 0;
+}
+.description {
+  white-space: pre-line;
+}
+@media (max-width: 600px) {
+  form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .book {
+    padding: 1rem;
+    gap: 1rem;
+  }
+  dialog {
+    padding: 1rem;
+  }
+}

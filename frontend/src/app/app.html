@@ -5,7 +5,14 @@
     <span>My Library</span>
   </a>
   <nav aria-label="Main navigation">
-    <a routerLink="/" aria-current="page">Home</a>
+    <a
+      routerLink="/"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      ariaCurrentWhenActive="page"
+      >Home</a
+    >
+    <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">Search books</a>
   </nav>
 </header>
 <main id="main-content" tabindex="-1">

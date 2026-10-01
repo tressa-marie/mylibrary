@@ -106,5 +106,51 @@ scripts/smoke-test.mjs       Live frontend/API smoke check
 - If npm 10 fails with an `edgesOut` resolver error, use npm 11. You can run
   `npx --yes npm@11.21.0 ci` without changing your globally installed npm.
 
-Authentication, book searching, persistence, profiles, and production deployment
+Authentication, persistence, profiles, and production deployment
 are intentionally left for future work.
+
+## Book search
+
+Open **Search books** in the navigation (`/search`). Choose all fields, title,
+author, or ISBN, enter a term, and submit. Select a title to open additional
+details. Searches show up to 20 editions; refine the term or use ISBN to narrow
+the results. Missing metadata and covers are explicitly indicated. Google Books
+does not consistently provide binding or edition numbers; the UI displays the
+available format, publisher, year, and ISBN without guessing a binding.
+
+The API uses a configurable `IBookProvider` adapter, initially Google Books.
+Configure `Books:Provider`, `Books:BaseUrl`, and `Books:ApiKey` on the backend.
+For local PowerShell, set `$env:Books__ApiKey = 'your-key'` before starting the API.
+Keep the key in environment variables or your deployment secret store, never in
+frontend configuration or committed settings. Enable the Books API for your
+Google project; see the [provider setup documentation](https://developers.google.com/books/docs/v1/using#APIKey).
+The base URL defaults to `https://www.googleapis.com/books/v1/`. Changing provider
+requires registering another `IBookProvider` adapter, without changing the UI.
+
+- `GET /api/books?query=...&field=all|title|author|isbn` returns `{ books: Book[] }`.
+  Terms are trimmed and must contain 1–200 characters; invalid requests return 400.
+- `GET /api/books/{id}` returns a My Library `Book`, or 404 if missing.
+- `GET /api/books/{id}/cover` proxies an available JPEG cover. The browser accesses
+  only My Library URLs, including for images. Untrusted cover hosts are rejected.
+
+`Book` contains `id`, `title`, `subtitle`, `authors`, `publicationYear`, `isbns`,
+`format`, `coverUrl`, `publisher`, `description`, `pageCount`, and `language`.
+Optional scalars are null and missing lists are empty. IDs are opaque to the UI.
+Provider models are private to the adapter. Descriptions are returned as plain
+text. Service failures, malformed JSON, and the 10-second provider timeout return
+503 Problem Details. The UI also applies a 15-second request timeout and cancels
+superseded requests.
+
+Run deterministic API integration checks against a local provider stub:
+
+```sh
+dotnet build backend/MyLibrary.Api -o backend/MyLibrary.Api/bin/verification
+node scripts/book-api-test.mjs
+```
+
+These checks do not require credentials or make external requests. Frontend tests
+(`npm test -- --watch=false` in `frontend`) cover search, details, loading, empty
+results, failures/retry, stale requests, and metadata/cover fallbacks. To verify
+live provider access, configure your API key and search for a known title, author,
+and ISBN; confirm the browser Network panel contains only same-origin API/image
+requests. Collection mutations are outside this feature.
