@@ -1,30 +1,25 @@
 <section aria-labelledby="search-title">
-  <p class="eyebrow">Find your next chapter</p>
-  <h1 id="search-title">Search books</h1>
-  <p>Explore books by title, author, or ISBN and find the edition you're looking for.</p>
+  <div class="page-title">
+    <h1 class="header" id="top-text">Hold your library</h1>
+    <h1 class="header" id="bottom-text">In your pocket</h1>
+  </div>
   <form (ngSubmit)="search()">
-    <div>
-      <label for="search-field">Search by</label>
-      <select id="search-field" name="field" [(ngModel)]="field">
-        <option value="all">All fields</option>
-        <option value="title">Title</option>
-        <option value="author">Author</option>
-        <option value="isbn">ISBN</option>
-      </select>
+    <div class="search-form">
+      <div class="term">
+        <label for="search-query">Search term</label>
+        <input
+          id="search-query"
+          name="query"
+          type="search"
+          [(ngModel)]="query"
+          maxlength="200"
+          required
+          placeholder="Title, author, or ISBN"
+        />
+      </div>
+      <button type="submit" [disabled]="!query.trim()">Search</button>
     </div>
-    <div class="term">
-      <label for="search-query">Search term</label>
-      <input
-        id="search-query"
-        name="query"
-        type="search"
-        [(ngModel)]="query"
-        maxlength="200"
-        required
-        placeholder="Title, author, or ISBN"
-      />
-    </div>
-    <button type="submit" [disabled]="!query.trim()">Search</button>
+    <div class="helper-text">Search powered by Google Books. Try "<em>Harry Potter</em>" or "<em>Olivie Blake</em>"</div>
   </form>
   <div role="status" aria-live="polite">
     @switch (state()) {

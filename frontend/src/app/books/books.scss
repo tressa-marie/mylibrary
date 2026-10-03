@@ -13,7 +13,7 @@ h1 {
   font-size: 0.75rem;
 }
 form {
-  display: flex;
+  
   gap: 1rem;
   align-items: end;
   margin: 2rem 0;
@@ -26,6 +26,11 @@ label {
 .term {
   flex: 1;
 }
+.search-form {
+  display: flex;
+  gap: 0.75rem;
+  align-content: flex-end;
+}
 input,
 select,
 button {
@@ -33,6 +38,7 @@ button {
   padding: 0.8rem;
   border: 1px solid #68756b;
   border-radius: 0.4rem;
+  height: 50px;
 }
 input,
 select {
@@ -44,6 +50,7 @@ button {
   cursor: pointer;
   background: #254d3c;
   color: white;
+  margin-top: auto;
 }
 button:disabled {
   opacity: 0.5;
@@ -135,8 +142,21 @@ dt {
 dd {
   margin: 0;
 }
+.helper-text {
+  font-size: 0.9rem;
+  color: #625f57;
+  margin: 0.5rem 0 0 0.75rem;
+}
 .description {
   white-space: pre-line;
+}
+.header{
+  margin: 0;
+  font-weight: 800;
+}
+#bottom-text{
+  color: #cf6925;
+  font-style: italic;
 }
 @media (max-width: 600px) {
   form {
