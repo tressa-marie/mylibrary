@@ -66,6 +66,7 @@
             <p>{{ book.publisher }}</p>
           }
           <p>ISBN: {{ book.isbns.join(', ') || 'Unavailable' }}</p>
+          <button id="add-to-library-btn" type="button" routerLink="/owned-books/add-book">Add to my library</button>
         </div>
       </li>
     }

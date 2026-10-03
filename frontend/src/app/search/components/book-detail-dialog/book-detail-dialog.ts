@@ -1,10 +1,12 @@
 import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Book, BookService } from '../../services/book.service';
 
 @Component({
   selector: 'app-book-detail-dialog',
+  imports: [RouterLink],
   templateUrl: './book-detail-dialog.html',
   styleUrl: './book-detail-dialog.scss',
 })
@@ -45,4 +47,5 @@ export class BookDetailDialog {
     this.returnFocus?.focus();
     this.returnFocus = undefined;
   }
+
 }

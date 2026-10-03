@@ -83,6 +83,9 @@ button:disabled {
   color: #625f57;
 }
 .metadata {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -104,6 +107,8 @@ h2 {
 }
 p {
   line-height: 1.6;
+  padding: 0;
+  margin: 0 !important;
 }
 .book p {
   margin: 0.45rem 0;
@@ -127,6 +132,18 @@ p {
   margin-top: 0.08em;
   color: #bf4d38;
   font-style: italic;
+}
+#add-to-library-btn {
+  align-self: flex-end;
+  flex-shrink: 0;
+  background-color: #bf4d38;
+  color: white;
+  border: none;
+  padding: 0 1rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  margin-left: auto;
+  margin-top: auto;
 }
 @media (max-width: 600px) {
   form {

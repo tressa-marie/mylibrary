@@ -1,13 +1,14 @@
 import { Component, DestroyRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BookDetailDialog } from '../book-detail-dialog/book-detail-dialog';
 import { Book, BookService, SearchField } from '../../services/book.service';
 
 @Component({
   selector: 'app-book-search',
-  imports: [FormsModule, BookDetailDialog],
+  imports: [FormsModule, RouterLink, BookDetailDialog],
   templateUrl: './book-search.html',
   styleUrl: './book-search.scss',
 })
