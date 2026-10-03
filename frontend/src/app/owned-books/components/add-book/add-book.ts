@@ -5,6 +5,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { OwnedBook } from '../../models/owned-book';
 
 @Component({
   selector: 'app-add-book',
@@ -20,16 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
   ],
 })
 export class AddBook {
-  book = {
-    title: '',
-    author: '',
-    isbn: '',
-    format: '',
-    authorGender: 'male',
-    rating: null as number | null,
-    purchaseLocation: '',
-    publicationYear: null as number | null,
-  };
+  book = new OwnedBook();
 
   isRead = false;
 

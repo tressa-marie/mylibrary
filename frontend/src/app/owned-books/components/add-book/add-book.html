@@ -5,11 +5,23 @@
       <input matInput id="title" name="title" type="text" [(ngModel)]="book.title" />
     </mat-form-field>
   </div>
-  <div>
+  <div class="form-line-group">
+<div class="author-field">
     <mat-form-field appearance="outline">
       <mat-label>Author</mat-label>
       <input matInput id="author" name="author" type="text" [(ngModel)]="book.author" />
     </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline" id="author-gender">
+      <mat-label>Author Gender</mat-label>
+      <mat-select id="author-gender" name="authorGender" [(ngModel)]="book.authorGender" panelClass="author-gender-panel">
+        <mat-option value="male">Male</mat-option>
+        <mat-option value="female">Female</mat-option>
+        <mat-option value="other">Other</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
   </div>
   <div>
     <mat-form-field appearance="outline">
@@ -23,24 +35,16 @@
       <input matInput id="format" name="format" type="text" [(ngModel)]="book.format" />
     </mat-form-field>
   </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Author Gender</mat-label>
-      <mat-select id="author-gender" name="authorGender" [(ngModel)]="book.authorGender">
-        <mat-option value="male">Male</mat-option>
-        <mat-option value="female">Female</mat-option>
-        <mat-option value="other">Other</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
-  <div>
-    <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead">isRead</mat-checkbox>
-  </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Rating</mat-label>
-      <input matInput id="rating" name="rating" type="number" [(ngModel)]="book.rating" [disabled]="!isRead" />
-    </mat-form-field>
+  <div class="form-line-group">
+    <div>
+      <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead">Have you read this book?</mat-checkbox>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Rating</mat-label>
+        <input matInput id="rating" name="rating" type="number" min="0" max="10" [(ngModel)]="book.rating" [disabled]="!isRead" />
+      </mat-form-field>
+    </div>
   </div>
   <div>
     <mat-form-field appearance="outline">

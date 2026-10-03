@@ -1,0 +1,31 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: block;
+}
+
+form {
+  width: min(100%, 36rem);
+  margin-inline: auto;
+  padding-block: 2rem;
+}
+
+mat-form-field {
+  width: 100%;
+
+  @include mat.form-field-overrides((
+    outlined-container-shape: 8px,
+  ));
+}
+
+.form-line-group {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+}
+
+.author-field {
+  flex: 1;
+  min-width: 0;
+}
