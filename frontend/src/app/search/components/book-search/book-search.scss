@@ -109,41 +109,10 @@ p {
   margin: 0.45rem 0;
   font-size: 0.9rem;
 }
-dialog {
-  width: min(40rem, 90vw);
-  max-height: 85vh;
-  padding: 2rem;
-  border: 1px solid #dedbd1;
-  border-radius: 0.75rem;
-  background: #fffdf8;
-  color: inherit;
-  overflow-wrap: anywhere;
-}
-dialog::backdrop {
-  background: #17271db3;
-}
-.close {
-  display: block;
-  margin: 0 0 1rem auto;
-}
-dl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.75rem 1rem;
-}
-dt {
-  font-weight: 600;
-}
-dd {
-  margin: 0;
-}
 .helper-text {
   font-size: 0.9rem;
   color: #625f57;
   margin: 0.5rem 0 0 0.75rem;
-}
-.description {
-  white-space: pre-line;
 }
 .header {
   margin: 0;
@@ -167,8 +136,5 @@ dd {
   .book {
     padding: 1rem;
     gap: 1rem;
-  }
-  dialog {
-    padding: 1rem;
   }
 }

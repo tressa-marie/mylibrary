@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: 'search',
-    loadComponent: () => import('./books/books').then((m) => m.Books),
+    loadComponent: () => import('./search/components/book-search/book-search').then((m) => m.BookSearch),
     title: 'Search books | My Library',
   },
   {

@@ -1,11 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Books } from './books';
+import { BookSearch } from './book-search';
 import { Book } from '../core/book.service';
 
 describe('Book search', () => {
-  let fixture: ComponentFixture<Books>;
+  let fixture: ComponentFixture<BookSearch>;
   let http: HttpTestingController;
   let element: HTMLElement;
   const book: Book = {
@@ -25,11 +25,11 @@ describe('Book search', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [Books],
+      imports: [BookSearch],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
-    fixture = TestBed.createComponent(Books);
+    fixture = TestBed.createComponent(BookSearch);
     fixture.detectChanges();
     element = fixture.nativeElement;
     const dialog = element.querySelector('dialog')!;
@@ -45,9 +45,7 @@ describe('Book search', () => {
     const input = element.querySelector('input')!;
     input.value = query;
     input.dispatchEvent(new Event('input'));
-    const select = element.querySelector('select')!;
-    select.value = field;
-    select.dispatchEvent(new Event('change'));
+    fixture.componentInstance['field'] = field as 'all' | 'title' | 'author' | 'isbn';
     element.querySelector('form')!.dispatchEvent(new Event('submit', { cancelable: true }));
     fixture.detectChanges();
   }
@@ -114,6 +112,23 @@ describe('Book search', () => {
     fixture.detectChanges();
     expect(element.querySelector('dialog')!.textContent).toContain('More about this book');
     expect(element.querySelector('dialog')!.textContent).toContain('123');
+  });
+
+  it('cancels the detail request and restores focus when the dialog closes', () => {
+    search('test');
+    http.expectOne((r) => r.url === '/api/books').flush({ books: [book] });
+    fixture.detectChanges();
+    const title = element.querySelector<HTMLButtonElement>('.title')!;
+    title.focus();
+    title.click();
+    fixture.detectChanges();
+    const request = http.expectOne('/api/books/edition-1');
+    const close = element.querySelector<HTMLButtonElement>('dialog .close')!;
+    close.focus();
+    close.click();
+    expect(request.cancelled).toBe(true);
+    expect(element.querySelector('dialog')!.open).toBe(false);
+    expect(document.activeElement).toBe(title);
   });
 
   it('renders absent metadata and broken covers gracefully', () => {

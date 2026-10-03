@@ -1,0 +1,76 @@
+:host {
+  display: contents;
+}
+
+dialog {
+  width: min(40rem, 90vw);
+  max-height: 85vh;
+  padding: 2rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+dialog::backdrop {
+  background: #17271db3;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font: 500 1.5rem Georgia, serif;
+}
+
+p {
+  line-height: 1.6;
+}
+
+button {
+  font: inherit;
+  padding: 0.8rem;
+  border: 1px solid #68756b;
+  border-radius: 0.4rem;
+  height: 50px;
+  cursor: pointer;
+  background: #254d3c;
+  color: white;
+  margin-top: auto;
+}
+
+.close {
+  display: block;
+  margin: 0 0 1rem auto;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem 1rem;
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd {
+  margin: 0;
+}
+
+.description {
+  white-space: pre-line;
+}
+
+@media (max-width: 600px) {
+  dialog {
+    padding: 1rem;
+  }
+}
