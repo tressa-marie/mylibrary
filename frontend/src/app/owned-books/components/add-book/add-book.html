@@ -1,0 +1,52 @@
+<form (ngSubmit)="addBook()">
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Title</mat-label>
+      <input matInput id="title" name="title" type="text" [(ngModel)]="book.title" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Author</mat-label>
+      <input matInput id="author" name="author" type="text" [(ngModel)]="book.author" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>ISBN</mat-label>
+      <input matInput id="isbn" name="isbn" type="text" [(ngModel)]="book.isbn" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Format</mat-label>
+      <input matInput id="format" name="format" type="text" [(ngModel)]="book.format" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Author Gender</mat-label>
+      <mat-select id="author-gender" name="authorGender" [(ngModel)]="book.authorGender">
+        <mat-option value="male">Male</mat-option>
+        <mat-option value="female">Female</mat-option>
+        <mat-option value="other">Other</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead">isRead</mat-checkbox>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Rating</mat-label>
+      <input matInput id="rating" name="rating" type="number" [(ngModel)]="book.rating" [disabled]="!isRead" />
+    </mat-form-field>
+  </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Purchase location</mat-label>
+      <input matInput id="purchase-location" name="purchaseLocation" type="text" [(ngModel)]="book.purchaseLocation" />
+    </mat-form-field>
+  </div>
+  <button mat-flat-button type="submit">Add Book</button>
+</form>

@@ -36,6 +36,6 @@
         <p class="description">{{ book.description || 'No description available.' }}</p>
       }
     </div>
-    <button class="floating-btn" type="button" routerLink="/owned-books/add-book" (click)="close()">+</button>
+    <button class="floating-btn" type="button" routerLink="/owned-books/add-book" (click)="close()" aria-label="Add book">+</button>
   }
 </dialog>
