@@ -4,10 +4,22 @@
   display: block;
 }
 
-form {
-  width: min(100%, 36rem);
+h2 {
+  margin-block: 0.5rem 1rem;
+}
+
+.add-book-layout {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 36rem);
+  gap: 2rem;
+  align-items: start;
+  width: min(100%, 48rem);
   margin-inline: auto;
   padding-block: 2rem;
+}
+
+form {
+  min-width: 0;
 }
 
 mat-form-field {
@@ -16,6 +28,49 @@ mat-form-field {
   @include mat.form-field-overrides((
     outlined-container-shape: 8px,
   ));
+}
+
+.book-cover-column {
+  min-width: 0;
+}
+
+.book-cover,
+.book-cover-placeholder {
+  width: min(10rem, 100%);
+  border-radius: 8px;
+}
+
+.book-cover {
+  display: block;
+  height: auto;
+  max-height: 15rem;
+  object-fit: contain;
+  object-position: left top;
+}
+
+.book-cover-placeholder {
+  aspect-ratio: 2 / 3;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: #e8e1d4;
+  color: #525b50;
+  text-align: center;
+}
+
+textarea {
+  resize: vertical;
+}
+
+@media (max-width: 40rem) {
+  .add-book-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+
+  .form-line-group {
+    flex-wrap: wrap;
+  }
 }
 
 .form-line-group {

@@ -1,3 +1,18 @@
+<div class="add-book-layout">
+  <div class="book-cover-column">
+    <h2>Add a Book</h2>
+    <p>When you add a book to your collection, it will be listed in your library.</p>
+    @if (book.coverUrl && !coverFailed) {
+      <img
+        class="book-cover"
+        [src]="book.coverUrl"
+        [alt]="book.title ? 'Cover of ' + book.title : 'Book cover'"
+        (error)="coverFailed = true"
+      />
+    } @else if (bookId) {
+      <div class="book-cover-placeholder">No cover available</div>
+    }
+  </div>
 <form (ngSubmit)="addBook()">
   <div>
     <mat-form-field appearance="outline">
@@ -40,6 +55,12 @@
       </mat-form-field>
     </div>
   </div>
+  <div>
+    <mat-form-field appearance="outline">
+      <mat-label>Description</mat-label>
+      <textarea matInput id="description" name="description" rows="5" [(ngModel)]="book.description"></textarea>
+    </mat-form-field>
+  </div>
   <details class="advanced-options">
     <summary>Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span></summary>
     <div>
@@ -81,3 +102,4 @@
   </details>
   <button mat-flat-button type="submit">Add Book</button>
 </form>
+</div>

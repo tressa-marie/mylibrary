@@ -1,14 +1,13 @@
 import { Component, DestroyRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { BookDetailDialog } from '../book-detail-dialog/book-detail-dialog';
 import { Book, BookService, SearchField } from '../../services/book.service';
 
 @Component({
   selector: 'app-book-search',
-  imports: [FormsModule, RouterLink, BookDetailDialog],
+  imports: [FormsModule, BookDetailDialog],
   templateUrl: './book-search.html',
   styleUrl: './book-search.scss',
 })
@@ -47,5 +46,11 @@ export class BookSearch {
 
   protected coverFailed(id: string) {
     this.failedCovers.update((previous) => new Set([...previous, id]));
+  }
+
+  protected addToLibrary(book: Book) {
+    // navigate to the add book page with the book's ID as a query parameter
+    const url = `/add-book?bookId=${encodeURIComponent(book.id)}`;
+    window.location.href = url;
   }
 }

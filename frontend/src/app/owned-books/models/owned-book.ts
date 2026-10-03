@@ -1,5 +1,7 @@
 export class OwnedBook {
   title = '';
+  description = '';
+  coverUrl: string | null = null;
   author = '';
   isbn = '';
   format = '';
