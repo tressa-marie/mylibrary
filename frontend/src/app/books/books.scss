@@ -2,11 +2,6 @@
   display: block;
   padding: 2rem 0;
 }
-h1 {
-  font:
-    500 clamp(2rem, 5vw, 3rem) Georgia,
-    serif;
-}
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -150,12 +145,18 @@ dd {
 .description {
   white-space: pre-line;
 }
-.header{
+.header {
   margin: 0;
-  font-weight: 800;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2.75rem, 7vw, 5.25rem);
+  font-weight: 700;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  color: #172b23;
 }
-#bottom-text{
-  color: #cf6925;
+#bottom-text {
+  margin-top: 0.08em;
+  color: #bf4d38;
   font-style: italic;
 }
 @media (max-width: 600px) {
