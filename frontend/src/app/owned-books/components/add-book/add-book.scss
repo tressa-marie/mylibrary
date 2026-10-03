@@ -29,3 +29,24 @@ mat-form-field {
   flex: 1;
   min-width: 0;
 }
+
+.advanced-options {
+  margin-bottom: 1.5rem;
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.75rem;
+    list-style: none;
+    cursor: pointer;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  &[open] .advanced-arrow {
+    transform: rotate(180deg);
+  }
+}

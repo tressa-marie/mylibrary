@@ -29,12 +29,6 @@
       <input matInput id="isbn" name="isbn" type="text" [(ngModel)]="book.isbn" />
     </mat-form-field>
   </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Format</mat-label>
-      <input matInput id="format" name="format" type="text" [(ngModel)]="book.format" />
-    </mat-form-field>
-  </div>
   <div class="form-line-group">
     <div>
       <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead">Have you read this book?</mat-checkbox>
@@ -46,11 +40,44 @@
       </mat-form-field>
     </div>
   </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Purchase location</mat-label>
-      <input matInput id="purchase-location" name="purchaseLocation" type="text" [(ngModel)]="book.purchaseLocation" />
-    </mat-form-field>
-  </div>
+  <details class="advanced-options">
+    <summary>Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span></summary>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Purchase location</mat-label>
+        <input matInput id="purchase-location" name="purchaseLocation" type="text" [(ngModel)]="book.purchaseLocation" />
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Publisher</mat-label>
+        <input matInput id="publisher" name="publisher" type="text" [(ngModel)]="book.publisher" />
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Publication year</mat-label>
+        <input matInput id="publication-year" name="publicationYear" type="number" min="0" [(ngModel)]="book.publicationYear" />
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Edition</mat-label>
+        <input matInput id="edition" name="edition" type="text" [(ngModel)]="book.edition" />
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Format</mat-label>
+        <input matInput id="format" name="format" type="text" [(ngModel)]="book.format" />
+      </mat-form-field>
+    </div>
+    <div>
+      <mat-form-field appearance="outline">
+        <mat-label>Page count</mat-label>
+        <input matInput id="page-count" name="pageCount" type="number" min="0" [(ngModel)]="book.pageCount" />
+      </mat-form-field>
+    </div>
+  </details>
   <button mat-flat-button type="submit">Add Book</button>
 </form>
