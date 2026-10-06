@@ -1,6 +1,12 @@
+using Microsoft.EntityFrameworkCore;
 using MyLibrary.Api.Books;
+using MyLibrary.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+var libraryConnectionString = builder.Configuration.GetConnectionString("Library")
+    ?? throw new InvalidOperationException("The Library database connection string is missing.");
+builder.Services.AddDbContext<LibraryDbContext>(options =>
+    options.UseSqlite(libraryConnectionString));
 builder.Services.AddHealthChecks();
 if (builder.Configuration["Books:Provider"] != "GoogleBooks")
     throw new InvalidOperationException("Unsupported Books:Provider. Configure GoogleBooks or register another IBookProvider adapter.");
