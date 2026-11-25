@@ -74,13 +74,20 @@ tbody th {
   min-width: 12rem;
   font-weight: 600;
 }
+tbody th a {
+  text-decoration: none;
+}
 td {
   min-width: 8rem;
 }
 tbody tr:last-child > * {
   border-bottom: 0;
 }
-tbody tr:hover {
+tbody tr {
+  cursor: pointer;
+}
+tbody tr:hover,
+tbody tr:focus-within {
   background: #f7f4ec;
 }
 .read-status {

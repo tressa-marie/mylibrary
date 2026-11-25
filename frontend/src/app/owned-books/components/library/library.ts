@@ -1,6 +1,6 @@
 import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { SavedOwnedBook } from '../../models/owned-book-api';
 import { OwnedBookService } from '../../services/owned-book.service';
 
@@ -12,12 +12,17 @@ import { OwnedBookService } from '../../services/owned-book.service';
 })
 export class Library implements OnInit {
   private readonly service = inject(OwnedBookService);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly books = signal<SavedOwnedBook[]>([]);
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
 
   ngOnInit() {
     this.loadBooks();
+  }
+
+  protected openBook(id: string) {
+    void this.router.navigate(['/library/books', id]);
   }
 
   protected loadBooks() {

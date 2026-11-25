@@ -10,6 +10,10 @@ export class OwnedBookService {
     return this.http.get<SavedOwnedBook[]>('/api/library/books');
   }
 
+  get(id: string) {
+    return this.http.get<SavedOwnedBook>(`/api/library/books/${encodeURIComponent(id)}`);
+  }
+
   create(book: CreateOwnedBookRequest) {
     return this.http.post<SavedOwnedBook>('/api/library/books', book);
   }

@@ -40,8 +40,14 @@
             </thead>
             <tbody>
               @for (book of books(); track book.id) {
-                <tr>
-                  <th scope="row">{{ book.title || '-' }}</th>
+                <tr (click)="openBook(book.id)">
+                  <th scope="row">
+                    <a
+                      [routerLink]="['/library/books', book.id]"
+                      (click)="$event.stopPropagation()"
+                      >{{ book.title || '-' }}</a
+                    >
+                  </th>
                   <td>{{ book.author || '-' }}</td>
                   <td>{{ book.genre || '-' }}</td>
                   <td>

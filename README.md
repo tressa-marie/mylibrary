@@ -41,6 +41,11 @@ title, author, genre, read status, rating (out of 5 for read books), and shelf
 location. Use **Add a book** to grow your library. Genre and shelf location are
 optional fields on the form. Stop either application with `Ctrl+C` in its terminal.
 
+Click a library row or its title to open `/library/books/{id}`. The detail page
+loads the saved copy through `GET /api/library/books/{id}` and shows its stored
+metadata and ownership details. Missing values display `-`, and ratings display
+only the number. Use **Back to library** to return to the table.
+
 This local setup uses HTTP and does not require a trusted HTTPS certificate.
 
 ## How the connection works
