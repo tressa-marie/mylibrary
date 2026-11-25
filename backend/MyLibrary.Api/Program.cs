@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyLibrary.Api.Books;
 using MyLibrary.Api.Data;
+using MyLibrary.Api.OwnedBooks;
 
 var builder = WebApplication.CreateBuilder(args);
 var libraryConnectionString = builder.Configuration.GetConnectionString("Library")
@@ -20,9 +21,15 @@ builder.Services.AddHttpClient<IBookProvider, GoogleBooksProvider>(http =>
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.None);
 
 var app = builder.Build();
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<LibraryDbContext>().Database.MigrateAsync();
+}
 if (string.IsNullOrWhiteSpace(builder.Configuration["Books:ApiKey"]))
     app.Logger.LogWarning("Books:ApiKey is not configured. Set Books__ApiKey in the terminal that starts the API.");
 app.MapBooks();
+app.MapOwnedBooks();
 
 app.MapHealthChecks("/api/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

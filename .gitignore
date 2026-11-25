@@ -12,6 +12,8 @@ coverage/
 *.suo
 
 # Local files
+/backend/MyLibrary.Api/mylibrary.db
+/backend/MyLibrary.Api/mylibrary.db-*
 *.log
 .DS_Store
 Thumbs.db

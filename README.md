@@ -106,7 +106,7 @@ scripts/smoke-test.mjs       Live frontend/API smoke check
 - If npm 10 fails with an `edgesOut` resolver error, use npm 11. You can run
   `npx --yes npm@11.21.0 ci` without changing your globally installed npm.
 
-Authentication, persistence, profiles, and production deployment
+Authentication, profiles, and production deployment
 are intentionally left for future work.
 
 ## Book search
@@ -153,4 +153,67 @@ These checks do not require credentials or make external requests. Frontend test
 results, failures/retry, stale requests, and metadata/cover fallbacks. To verify
 live provider access, configure your API key and search for a known title, author,
 and ISBN; confirm the browser Network panel contains only same-origin API/image
-requests. Collection mutations are outside this feature.
+requests.
+
+## Library persistence
+
+The library uses EF Core 10 with SQLite. `Domain/Book` stores the work's title,
+author, and description; `Domain/Edition` stores publication details and references
+the book; `OwnedBooks/OwnedBook` references an edition and stores read status,
+rating, purchase location, and a server-generated ID and UTC creation timestamp.
+The search provider's `Books/Book` remains a separate external API model.
+
+There is currently one local library. Authentication and per-user library
+isolation are not implemented; these endpoints must be scoped to an authenticated
+user before adding multi-user access.
+
+`ConnectionStrings:Library` defaults to `Data Source=mylibrary.db` in the API's
+working directory. Override it with `ConnectionStrings__Library` when needed.
+Development startup applies pending migrations automatically. The existing
+`InitialLibrary` migration creates the initial schema; `NormalizeLibraryBooks`
+separates works, editions, and owned copies, preserving existing records. To apply
+migrations explicitly (requires the .NET 10 `dotnet-ef` tool):
+
+```powershell
+dotnet ef database update --project backend/MyLibrary.Api
+```
+
+- `POST /api/library/books` accepts the flat metadata and ownership fields shown
+  below. It returns `201 Created`, the saved record (including `id`, `editionId`,
+  and `createdAtUtc`), and a `Location` header. Each request creates a new owned
+  copy, edition, and book in one transaction; duplicates are allowed.
+- `GET /api/library/books` returns an array of saved records, or `[]` for an empty
+  library. It reads persisted metadata without calling Google Books.
+- `GET /api/library/books/{id}` returns one saved record, or `404`.
+- `/api/owned-books` supports the same operations for the existing frontend.
+
+Example, with the API running:
+
+```powershell
+$book = @{
+    title = 'A Wizard of Earthsea'
+    author = 'Ursula K. Le Guin'
+    format = 'Paperback'
+    publicationYear = 1968
+    isRead = $true
+    rating = 9
+    purchaseLocation = 'Local bookshop'
+} | ConvertTo-Json
+Invoke-RestMethod http://localhost:5080/api/library/books -Method Post -ContentType 'application/json' -Body $book
+Invoke-RestMethod http://localhost:5080/api/library/books
+```
+
+Only title is required. Optional fields also include `sourceBookId`, `isbn`,
+`description`, `coverUrl`, `authorGender`, `publisher`, `edition`, and `pageCount`.
+Strings are trimmed, ISBN separators are removed, and unread books have no rating.
+Invalid input returns `400` with field errors: rating must be 0–10, year and page
+count cannot be negative, and ISBN must contain 10 or 13 valid characters. Covers
+must use `/api/books/{sourceBookId}/cover`. No Google Books key is needed to add or
+list library records.
+
+Run persistence/API checks and migration preservation checks with temporary databases:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File backend/tests/OwnedBooks.Smoke.ps1
+node scripts/library-migration-test.mjs
+```

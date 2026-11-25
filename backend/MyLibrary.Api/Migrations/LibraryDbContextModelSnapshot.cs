@@ -17,7 +17,7 @@ namespace MyLibrary.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
-            modelBuilder.Entity("MyLibrary.Api.OwnedBooks.OwnedBook", b =>
+            modelBuilder.Entity("MyLibrary.Api.Domain.Book", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -25,30 +25,49 @@ namespace MyLibrary.Api.Migrations
 
                     b.Property<string>("Author")
                         .IsRequired()
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AuthorGender")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(20000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Books");
+                });
+
+            modelBuilder.Entity("MyLibrary.Api.Domain.Edition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("BookId")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CoverUrl")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Edition")
+                    b.Property<string>("EditionName")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Format")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Isbn")
+                        .HasMaxLength(13)
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("PageCount")
@@ -58,24 +77,73 @@ namespace MyLibrary.Api.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Publisher")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SourceBookId")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("Isbn");
+
+                    b.HasIndex("SourceBookId");
+
+                    b.ToTable("Editions");
+                });
+
+            modelBuilder.Entity("MyLibrary.Api.OwnedBooks.OwnedBook", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("EditionId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PurchaseLocation")
+                        .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("Rating")
                         .HasColumnType("REAL");
 
-                    b.Property<string>("SourceBookId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
 
+                    b.HasIndex("EditionId");
+
                     b.ToTable("OwnedBooks");
+                });
+
+            modelBuilder.Entity("MyLibrary.Api.Domain.Edition", b =>
+                {
+                    b.HasOne("MyLibrary.Api.Domain.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+                });
+
+            modelBuilder.Entity("MyLibrary.Api.OwnedBooks.OwnedBook", b =>
+                {
+                    b.HasOne("MyLibrary.Api.Domain.Edition", "EditionDetails")
+                        .WithMany()
+                        .HasForeignKey("EditionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("EditionDetails");
                 });
 #pragma warning restore 612, 618
         }
