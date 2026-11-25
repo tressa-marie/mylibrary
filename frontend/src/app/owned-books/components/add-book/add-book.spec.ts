@@ -19,6 +19,7 @@ describe('Add book', () => {
     const fixture = TestBed.createComponent(AddBook);
     try {
       fixture.detectChanges();
+      http.expectOne('/api/shelves').flush([]);
       const request = http.expectOne('/api/books/ADbRywEACAAJ');
       await Promise.resolve();
       const book: Book = {
@@ -100,6 +101,11 @@ describe('Add book saving', () => {
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture = TestBed.createComponent(AddBook);
     await fixture.whenStable();
+    http.expectOne('/api/shelves').flush([
+      { id: 'shelf-2', name: 'Study shelf', room: null, description: null, bookIds: [] },
+      { id: 'shelf-1', name: 'Favorites', room: 'Living room', description: null, bookIds: [] },
+    ]);
+    await fixture.whenStable();
   });
 
   afterEach(() => {
@@ -137,9 +143,14 @@ describe('Add book saving', () => {
     const genre: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
     genre.value = ' Fantasy ';
     genre.dispatchEvent(new Event('input'));
-    const shelf: HTMLInputElement = fixture.nativeElement.querySelector('#shelf-location');
-    shelf.value = ' Living room, shelf 2 ';
-    shelf.dispatchEvent(new Event('input'));
+    const shelf: HTMLSelectElement = fixture.nativeElement.querySelector('#shelf-location');
+    expect(Array.from(shelf.options, (option) => option.textContent?.trim())).toEqual([
+      'No shelf',
+      'Favorites',
+      'Study shelf',
+    ]);
+    shelf.selectedIndex = 1;
+    shelf.dispatchEvent(new Event('change'));
     await fixture.whenStable();
     fixture.componentInstance.book.rating = 4;
     fixture.componentInstance.bookId = 'source-id';
@@ -151,7 +162,8 @@ describe('Add book saving', () => {
       title: 'My Book',
       author: 'An Author',
       genre: 'Fantasy',
-      shelfLocation: 'Living room, shelf 2',
+      shelfId: 'shelf-1',
+      shelfLocation: 'Favorites (Living room)',
       sourceBookId: 'source-id',
       isRead: false,
       rating: null,
@@ -181,6 +193,7 @@ describe('Add book saving', () => {
       sourceBookId: null,
       genre: null,
       shelfLocation: null,
+      shelfId: null,
     });
     second.flush({ ...second.request.body, id: 'second-id', createdAtUtc: '2026-10-10T12:01:00Z' });
     await fixture.whenStable();
@@ -188,6 +201,10 @@ describe('Add book saving', () => {
 
   it('preserves input on validation failure and allows retry', async () => {
     await enterTitle('My Book');
+    const shelf: HTMLSelectElement = fixture.nativeElement.querySelector('#shelf-location');
+    shelf.selectedIndex = 2;
+    shelf.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
     submit();
     http
       .expectOne('/api/library/books')
@@ -202,8 +219,10 @@ describe('Add book saving', () => {
     );
     expect(fixture.componentInstance.saving()).toBe(false);
     expect(router.navigate).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.book.shelfId).toBe('shelf-2');
     submit();
     const retry = http.expectOne('/api/library/books');
+    expect(retry.request.body.shelfId).toBe('shelf-2');
     retry.flush({ ...retry.request.body, id: 'saved-id', createdAtUtc: '2026-10-10T12:00:00Z' });
     await fixture.whenStable();
     expect(fixture.componentInstance.successMessage()).toContain('added to your library');
@@ -233,5 +252,61 @@ describe('Add book saving', () => {
     await fixture.whenStable();
     expect(fixture.componentInstance.successMessage()).toContain('added to your library');
     expect(router.navigate).toHaveBeenCalledExactlyOnceWith(['/']);
+  });
+});
+
+describe('Add book shelf loading', () => {
+  let fixture: ComponentFixture<AddBook>;
+  let http: HttpTestingController;
+  let originalUrl: string;
+
+  beforeEach(async () => {
+    originalUrl = window.location.href;
+    window.history.replaceState(null, '', '/add-book');
+    TestBed.configureTestingModule({
+      imports: [AddBook],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+    http = TestBed.inject(HttpTestingController);
+    fixture = TestBed.createComponent(AddBook);
+    await fixture.whenStable();
+  });
+  afterEach(() => {
+    http.verify();
+    fixture.destroy();
+    window.history.replaceState(null, '', originalUrl);
+  });
+
+  it('shows a loading state, then a no-shelf option and create link for an empty list', async () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.textContent).toContain('Loading shelves');
+    expect(element.querySelector<HTMLSelectElement>('#shelf-location')!.disabled).toBe(true);
+    http.expectOne('/api/shelves').flush([]);
+    await fixture.whenStable();
+    expect(element.textContent).toContain('No shelves yet');
+    expect(element.querySelector('a[href="/shelves"]')).toBeTruthy();
+    const select = element.querySelector<HTMLSelectElement>('#shelf-location')!;
+    expect(select.disabled).toBe(false);
+    expect(select.options.length).toBe(1);
+    expect(select.options[0].textContent).toBe('No shelf');
+    expect(fixture.componentInstance.book.shelfId).toBeNull();
+  });
+
+  it('shows an error and loads options after a successful retry', async () => {
+    http.expectOne('/api/shelves').flush({}, { status: 503, statusText: 'Unavailable' });
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector('[role="alert"]')!.textContent).toContain(
+      'Shelves could not be loaded',
+    );
+    element.querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+    http
+      .expectOne('/api/shelves')
+      .flush([{ id: 'shelf-1', name: 'Favorites', room: 'Study', description: null, bookIds: [] }]);
+    await fixture.whenStable();
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+    const select = element.querySelector<HTMLSelectElement>('#shelf-location')!;
+    expect(select.disabled).toBe(false);
+    expect(select.options[1].textContent?.trim()).toBe('Favorites');
   });
 });

@@ -13,6 +13,7 @@ describe('App shell', () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('header')?.textContent).toContain('My Library');
     expect(element.querySelector('nav')?.textContent).toContain('Library');
+    expect(element.querySelector('nav a[href="/shelves"]')?.textContent).toBe('Shelves');
     expect(element.querySelector('main')).toBeTruthy();
   });
 });

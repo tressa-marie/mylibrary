@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -13,6 +13,7 @@ import { Book, BookService } from '../../../search/services/book.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OwnedBookService } from '../../services/owned-book.service';
 import { CreateOwnedBookRequest } from '../../models/owned-book-api';
+import { Shelf, ShelfService } from '../../../shelves/shelf.service';
 
 @Component({
   selector: 'app-add-book',
@@ -20,6 +21,7 @@ import { CreateOwnedBookRequest } from '../../models/owned-book-api';
   styleUrl: './add-book.scss',
   imports: [
     FormsModule,
+    RouterLink,
     MatButtonModule,
     MatCheckboxModule,
     MatFormFieldModule,
@@ -34,6 +36,9 @@ export class AddBook implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly ownedBookService = inject(OwnedBookService);
   private readonly router = inject(Router);
+  private readonly shelfService = inject(ShelfService);
+  readonly shelves = signal<Shelf[]>([]);
+  readonly shelfState = signal<'loading' | 'ready' | 'error'>('loading');
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly successMessage = signal('');
@@ -45,6 +50,7 @@ export class AddBook implements OnInit {
   bookId: string | null = null;
 
   ngOnInit() {
+    this.loadShelves();
     // Check if there's a bookId query parameter in the URL
     const urlParams = new URLSearchParams(window.location.search);
     this.bookId = urlParams.get('bookId');
@@ -64,6 +70,20 @@ export class AddBook implements OnInit {
           },
         });
     }
+  }
+
+  loadShelves() {
+    this.shelfState.set('loading');
+    this.shelfService
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (shelves) => {
+          this.shelves.set([...shelves].sort((a, b) => a.name.localeCompare(b.name)));
+          this.shelfState.set('ready');
+        },
+        error: () => this.shelfState.set('error'),
+      });
   }
 
   loadBook(book: Book) {
@@ -91,6 +111,7 @@ export class AddBook implements OnInit {
       return;
     }
     const optional = (value: string | null) => value?.trim() || null;
+    const shelf = this.shelves().find((shelf) => shelf.id === this.book.shelfId);
     const request: CreateOwnedBookRequest = {
       sourceBookId: optional(this.bookId),
       title: this.book.title.trim(),
@@ -103,7 +124,9 @@ export class AddBook implements OnInit {
       isRead: this.isRead,
       rating: this.isRead ? this.book.rating : null,
       purchaseLocation: optional(this.book.purchaseLocation),
-      shelfLocation: optional(this.book.shelfLocation),
+      shelfId: this.book.shelfId,
+      // Keep the existing library and details location label populated.
+      shelfLocation: shelf ? `${shelf.name}${shelf.room ? ` (${shelf.room})` : ''}` : null,
       genre: optional(this.book.genre),
       publicationYear: this.book.publicationYear,
       publisher: optional(this.book.publisher),

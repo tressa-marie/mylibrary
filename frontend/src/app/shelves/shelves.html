@@ -1,0 +1,117 @@
+<section aria-labelledby="shelves-title">
+  <header class="page-header">
+    <div>
+      <h1 id="shelves-title">Shelves</h1>
+      <p>A place for every book.</p>
+    </div>
+    <button #addButton type="button" (click)="open()">Add Shelf</button>
+  </header>
+  @if (successMessage()) {
+    <p role="status">{{ successMessage() }}</p>
+  }
+  @switch (state()) {
+    @case ('loading') {
+      <p class="message" role="status">Loading shelves…</p>
+    }
+    @case ('error') {
+      <div class="message" role="alert">
+        <h2>Could not load shelves</h2>
+        <p>Please try again in a moment.</p>
+        <button type="button" (click)="loadShelves()">Try again</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (shelves().length) {
+        <div class="table-container" role="region" aria-label="Your shelves" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Shelf name</th>
+                <th scope="col">Room</th>
+                <th scope="col">Description</th>
+                <th scope="col">Books</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (shelf of shelves(); track shelf.id) {
+                <tr>
+                  <th scope="row">{{ shelf.name }}</th>
+                  <td>{{ shelf.room || '-' }}</td>
+                  <td>{{ shelf.description || '-' }}</td>
+                  <td>{{ shelf.bookIds.length }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="message" role="status">
+          <h2>No shelves yet</h2>
+          <p>Create your first shelf to start organizing your library.</p>
+        </div>
+      }
+    }
+  }
+</section>
+
+<dialog
+  #shelfDialog
+  aria-labelledby="add-shelf-title"
+  (cancel)="onCancel($event)"
+  (close)="onClosed()"
+>
+  <div class="dialog-header">
+    <h2 id="add-shelf-title">Add Shelf</h2>
+    <button
+      class="close-button"
+      type="button"
+      aria-label="Close Add Shelf"
+      (click)="close()"
+      [disabled]="saving()"
+    >
+      ×
+    </button>
+  </div>
+  <form #shelfForm="ngForm" (ngSubmit)="save(shelfForm)">
+    <fieldset [disabled]="saving()">
+      <label for="shelf-name">Shelf name <span class="required">(required)</span></label>
+      <input
+        id="shelf-name"
+        name="name"
+        [(ngModel)]="draft.name"
+        required
+        maxlength="200"
+        autofocus
+        #nameField="ngModel"
+      />
+      @if (nameField.invalid && nameField.touched) {
+        <p class="field-error">Enter a shelf name of 1–200 characters.</p>
+      }
+      <label for="shelf-room">Room</label>
+      <input id="shelf-room" name="room" [(ngModel)]="draft.room" maxlength="200" />
+      <label for="shelf-description">Description</label>
+      <textarea
+        id="shelf-description"
+        name="description"
+        [(ngModel)]="draft.description"
+        maxlength="2000"
+        rows="4"
+      ></textarea>
+    </fieldset>
+    @if (saveError()) {
+      <div class="field-error" role="alert">
+        <p>{{ saveError() }}</p>
+        @if (fieldErrors().length) {
+          <ul>
+            @for (error of fieldErrors(); track $index) {
+              <li>{{ error }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+    <div class="dialog-actions">
+      <button type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save' }}</button>
+    </div>
+  </form>
+</dialog>

@@ -11,6 +11,7 @@ export interface CreateOwnedBookRequest {
   rating: number | null;
   purchaseLocation: string | null;
   shelfLocation: string | null;
+  shelfId: string | null;
   genre: string | null;
   publicationYear: number | null;
   publisher: string | null;

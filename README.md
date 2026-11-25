@@ -39,7 +39,9 @@ npm start
 Open **http://localhost:4200**. The Library page loads saved books and displays
 title, author, genre, read status, rating (out of 5 for read books), and shelf
 location. Use **Add a book** to grow your library. Genre and shelf location are
-optional fields on the form. Stop either application with `Ctrl+C` in its terminal.
+optional fields on the form. Shelf location is a dropdown loaded from saved
+shelves, showing shelf names, with a **No shelf** option. Stop either
+application with `Ctrl+C` in its terminal.
 
 Click a library row or its title to open `/library/books/{id}`. The detail page
 loads the saved copy through `GET /api/library/books/{id}` and shows its stored
@@ -230,7 +232,10 @@ Responses also include `bookIds`, derived from the saved library copies assigned
 to the shelf. A book can belong to one shelf or have no shelf. These use library
 copy IDs (`OwnedBook.Id`), rather than Google Books, work, or edition IDs.
 Shelves currently belong to the single local library; per-user isolation awaits
-authentication. The frontend has not been changed to use these endpoints.
+authentication. Open **Shelves** in the top navigation (`/shelves`) to see saved
+shelves and book counts. **Add Shelf** opens a modal with name, room, and
+description fields. It closes automatically after a successful save and refreshes
+the list; failed saves keep the form entries available for retry.
 
 | Method | Endpoint | Behavior |
 | --- | --- | --- |
@@ -264,6 +269,8 @@ book to a different shelf moves it; books are never duplicated or deleted.
 which becomes null when that shelf is deleted. The legacy `shelfLocation` string
 is preserved separately for compatibility; creating or renaming shelves does
 not reinterpret or overwrite existing free-text locations.
+The Add Book dropdown sends the selected `shelfId` and a snapshot of its name
+and room as `shelfLocation` for the existing library table and details page.
 
 Development startup applies the `AddShelves` migration. To verify shelf CRUD,
 membership changes, persistence, and safe deletion using a temporary database:

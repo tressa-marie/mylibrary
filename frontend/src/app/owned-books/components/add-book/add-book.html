@@ -120,16 +120,38 @@
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Shelf location</mat-label>
-        <input
-          matInput
+        <select
+          matNativeControl
           id="shelf-location"
-          name="shelfLocation"
-          type="text"
-          maxlength="500"
-          [(ngModel)]="book.shelfLocation"
-        />
+          name="shelfId"
+          [(ngModel)]="book.shelfId"
+          [disabled]="shelfState() !== 'ready' || saving()"
+        >
+          <option [ngValue]="null">No shelf</option>
+          @for (shelf of shelves(); track shelf.id) {
+            <option [ngValue]="shelf.id">
+              {{ shelf.name }}
+            </option>
+          }
+        </select>
       </mat-form-field>
     </div>
+    @switch (shelfState()) {
+      @case ('loading') {
+        <p role="status">Loading shelves…</p>
+      }
+      @case ('error') {
+        <div role="alert">
+          <p>Shelves could not be loaded. You can retry or save without a shelf.</p>
+          <button mat-button type="button" (click)="loadShelves()">Retry shelves</button>
+        </div>
+      }
+      @case ('ready') {
+        @if (!shelves().length) {
+          <p>No shelves yet. <a routerLink="/shelves">Create a shelf</a> or save without one.</p>
+        }
+      }
+    }
     <details class="advanced-options">
       <summary>
         Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span>
