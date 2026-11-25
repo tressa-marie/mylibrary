@@ -36,6 +36,10 @@ namespace MyLibrary.Api.Migrations
                         .HasMaxLength(20000)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Genre")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -116,6 +120,10 @@ namespace MyLibrary.Api.Migrations
 
                     b.Property<double?>("Rating")
                         .HasColumnType("REAL");
+
+                    b.Property<string>("ShelfLocation")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 

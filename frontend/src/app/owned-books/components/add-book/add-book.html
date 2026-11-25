@@ -13,93 +13,223 @@
       <div class="book-cover-placeholder">No cover available</div>
     }
   </div>
-<form (ngSubmit)="addBook()">
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Title</mat-label>
-      <input matInput id="title" name="title" type="text" [(ngModel)]="book.title" />
-    </mat-form-field>
-  </div>
-  <div class="form-line-group">
-<div class="author-field">
-    <mat-form-field appearance="outline">
-      <mat-label>Author</mat-label>
-      <input matInput id="author" name="author" type="text" [(ngModel)]="book.author" />
-    </mat-form-field>
-  </div>
-  <div>
-    <mat-form-field appearance="outline" id="author-gender">
-      <mat-label>Author Gender</mat-label>
-      <mat-select id="author-gender" name="authorGender" [(ngModel)]="book.authorGender" panelClass="author-gender-panel">
-        <mat-option value="male">Male</mat-option>
-        <mat-option value="female">Female</mat-option>
-        <mat-option value="other">Other</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </div>
-  </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>ISBN</mat-label>
-      <input matInput id="isbn" name="isbn" type="text" [(ngModel)]="book.isbn" />
-    </mat-form-field>
-  </div>
-  <div class="form-line-group">
+  <form #bookForm="ngForm" (ngSubmit)="addBook(bookForm)">
+    @if (loading()) {
+      <p role="status">Loading book details…</p>
+    }
     <div>
-      <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead">Have you read this book?</mat-checkbox>
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input
+          matInput
+          id="title"
+          name="title"
+          type="text"
+          required
+          maxlength="500"
+          #titleField="ngModel"
+          [(ngModel)]="book.title"
+        />
+        @if (titleField.invalid && titleField.touched) {
+          <mat-error>Enter a book title.</mat-error>
+        }
+      </mat-form-field>
+    </div>
+    <div class="form-line-group">
+      <div class="author-field">
+        <mat-form-field appearance="outline">
+          <mat-label>Author</mat-label>
+          <input
+            matInput
+            id="author"
+            name="author"
+            type="text"
+            maxlength="500"
+            [(ngModel)]="book.author"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline" id="author-gender">
+          <mat-label>Author Gender</mat-label>
+          <mat-select
+            id="author-gender"
+            name="authorGender"
+            [(ngModel)]="book.authorGender"
+            panelClass="author-gender-panel"
+          >
+            <mat-option value="male">Male</mat-option>
+            <mat-option value="female">Female</mat-option>
+            <mat-option value="other">Other</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
     </div>
     <div>
       <mat-form-field appearance="outline">
-        <mat-label>Rating</mat-label>
-        <input matInput id="rating" name="rating" type="number" min="0" max="10" [(ngModel)]="book.rating" [disabled]="!isRead" />
+        <mat-label>ISBN</mat-label>
+        <input matInput id="isbn" name="isbn" type="text" [(ngModel)]="book.isbn" />
       </mat-form-field>
     </div>
-  </div>
-  <div>
-    <mat-form-field appearance="outline">
-      <mat-label>Description</mat-label>
-      <textarea matInput id="description" name="description" rows="5" [(ngModel)]="book.description"></textarea>
-    </mat-form-field>
-  </div>
-  <details class="advanced-options">
-    <summary>Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span></summary>
-    <div>
-      <mat-form-field appearance="outline">
-        <mat-label>Purchase location</mat-label>
-        <input matInput id="purchase-location" name="purchaseLocation" type="text" [(ngModel)]="book.purchaseLocation" />
-      </mat-form-field>
-    </div>
-    <div>
-      <mat-form-field appearance="outline">
-        <mat-label>Publisher</mat-label>
-        <input matInput id="publisher" name="publisher" type="text" [(ngModel)]="book.publisher" />
-      </mat-form-field>
-    </div>
-    <div>
-      <mat-form-field appearance="outline">
-        <mat-label>Publication year</mat-label>
-        <input matInput id="publication-year" name="publicationYear" type="number" min="0" [(ngModel)]="book.publicationYear" />
-      </mat-form-field>
+    <div class="form-line-group">
+      <div>
+        <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead"
+          >Have you read this book?</mat-checkbox
+        >
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Rating</mat-label>
+          <input
+            matInput
+            id="rating"
+            name="rating"
+            type="number"
+            min="0"
+            max="5"
+            [(ngModel)]="book.rating"
+            [disabled]="!isRead"
+          />
+        </mat-form-field>
+      </div>
     </div>
     <div>
       <mat-form-field appearance="outline">
-        <mat-label>Edition</mat-label>
-        <input matInput id="edition" name="edition" type="text" [(ngModel)]="book.edition" />
+        <mat-label>Description</mat-label>
+        <textarea
+          matInput
+          id="description"
+          name="description"
+          rows="5"
+          maxlength="20000"
+          [(ngModel)]="book.description"
+        ></textarea>
       </mat-form-field>
     </div>
-    <div>
+    <div class="form-line-group">
       <mat-form-field appearance="outline">
-        <mat-label>Format</mat-label>
-        <input matInput id="format" name="format" type="text" [(ngModel)]="book.format" />
+        <mat-label>Genre</mat-label>
+        <input
+          matInput
+          id="genre"
+          name="genre"
+          type="text"
+          maxlength="100"
+          [(ngModel)]="book.genre"
+        />
       </mat-form-field>
-    </div>
-    <div>
       <mat-form-field appearance="outline">
-        <mat-label>Page count</mat-label>
-        <input matInput id="page-count" name="pageCount" type="number" min="0" [(ngModel)]="book.pageCount" />
+        <mat-label>Shelf location</mat-label>
+        <input
+          matInput
+          id="shelf-location"
+          name="shelfLocation"
+          type="text"
+          maxlength="500"
+          [(ngModel)]="book.shelfLocation"
+        />
       </mat-form-field>
     </div>
-  </details>
-  <button mat-flat-button type="submit">Add Book</button>
-</form>
+    <details class="advanced-options">
+      <summary>
+        Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span>
+      </summary>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Purchase location</mat-label>
+          <input
+            matInput
+            id="purchase-location"
+            name="purchaseLocation"
+            type="text"
+            maxlength="500"
+            [(ngModel)]="book.purchaseLocation"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Publisher</mat-label>
+          <input
+            matInput
+            id="publisher"
+            name="publisher"
+            type="text"
+            maxlength="500"
+            [(ngModel)]="book.publisher"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Publication year</mat-label>
+          <input
+            matInput
+            id="publication-year"
+            name="publicationYear"
+            type="number"
+            min="0"
+            [(ngModel)]="book.publicationYear"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Edition</mat-label>
+          <input
+            matInput
+            id="edition"
+            name="edition"
+            type="text"
+            maxlength="500"
+            [(ngModel)]="book.edition"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Format</mat-label>
+          <input
+            matInput
+            id="format"
+            name="format"
+            type="text"
+            maxlength="100"
+            [(ngModel)]="book.format"
+          />
+        </mat-form-field>
+      </div>
+      <div>
+        <mat-form-field appearance="outline">
+          <mat-label>Page count</mat-label>
+          <input
+            matInput
+            id="page-count"
+            name="pageCount"
+            type="number"
+            min="0"
+            [(ngModel)]="book.pageCount"
+          />
+        </mat-form-field>
+      </div>
+    </details>
+    @if (errorMessage()) {
+      <div role="alert">
+        <p>{{ errorMessage() }}</p>
+        @if (validationErrors().length) {
+          <ul>
+            @for (error of validationErrors(); track $index) {
+              <li>{{ error }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+    @if (successMessage()) {
+      <p role="status">{{ successMessage() }}</p>
+    }
+    <button mat-flat-button type="submit" [disabled]="loading() || saving()">
+      {{ saving() ? 'Adding…' : 'Add Book' }}
+    </button>
+  </form>
 </div>

@@ -26,6 +26,8 @@ public sealed class OwnedBook
     public double? Rating { get; set; }
 
     public string? PurchaseLocation { get; set; }
+    public string? ShelfLocation { get; set; }
+    [NotMapped] public string? Genre { get => EditionDetails.Book.Genre; set => EditionDetails.Book.Genre = value; }
     [NotMapped] public int? PublicationYear { get => EditionDetails.PublicationYear; set => EditionDetails.PublicationYear = value; }
     [NotMapped] public string? Publisher { get => EditionDetails.Publisher; set => EditionDetails.Publisher = value; }
     [NotMapped] public string? Edition { get => EditionDetails.EditionName; set => EditionDetails.EditionName = value; }

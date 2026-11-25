@@ -55,8 +55,9 @@ try {
         title = '  Test Library Book  '; author = ' Test Author '; sourceBookId = 'ADbRywEACAAJ'
         isbn = '978-1784702861'; description = "First line`nSecond line"
         coverUrl = '/api/books/ADbRywEACAAJ/cover'; format = 'Paperback'; authorGender = 'other'
-        isRead = $false; rating = 8; purchaseLocation = ' Local store '; publicationYear = 2020
+        isRead = $false; rating = 4; purchaseLocation = ' Local store '; publicationYear = 2020
         publisher = 'Vintage'; edition = 'First'; pageCount = 498
+        genre = ' Fantasy '; shelfLocation = ' Living room, shelf 2 '
     }
     $response = Invoke-WebRequest "$baseUrl/api/library/books" -Method Post -ContentType 'application/json' `
         -Body ($payload | ConvertTo-Json) -UseBasicParsing
@@ -67,14 +68,17 @@ try {
     Assert-True ($saved.isbn -eq '9781784702861') 'ISBN must be normalized.'
     Assert-True ($null -eq $saved.rating) 'Unread books must have no rating.'
     Assert-True ($saved.purchaseLocation -eq 'Local store') 'Purchase location must be trimmed.'
+    Assert-True ($saved.genre -eq 'Fantasy') 'Genre must be trimmed and saved.'
+    Assert-True ($saved.shelfLocation -eq 'Living room, shelf 2') 'Shelf location must be trimmed and saved.'
     Assert-True ($saved.pageCount -eq 498 -and $saved.description -eq $payload.description) 'Metadata must be retained.'
     Assert-True ($saved.sourceBookId -eq $payload.sourceBookId -and $saved.coverUrl -eq $payload.coverUrl) 'Source and cover must be retained.'
     Assert-True ($saved.createdAtUtc -and [guid]::Parse($saved.id)) 'Server must generate ID and timestamp.'
     Assert-True ($response.Headers.Location -eq "/api/library/books/$($saved.id)") 'Location must identify the saved book.'
     Assert-True ([guid]::Parse($saved.editionId)) 'Saved copy must reference an edition.'
 
-    foreach ($invalid in @(@{ title = '   ' }, @{ title = 'Invalid'; isRead = $true; rating = 11 },
-            @{ title = 'Invalid'; pageCount = -1 }, @{ title = 'Invalid'; isbn = 'wrong' })) {
+    foreach ($invalid in @(@{ title = '   ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
+            @{ title = 'Invalid'; pageCount = -1 }, @{ title = 'Invalid'; isbn = 'wrong' },
+            @{ title = 'Invalid'; genre = ('x' * 101) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) })) {
         $status = 0
         try {
             Invoke-WebRequest "$baseUrl/api/library/books" -Method Post -ContentType 'application/json' `
@@ -83,8 +87,9 @@ try {
         Assert-True ($status -eq 400) 'Invalid data must return 400.'
     }
     $manual = Invoke-RestMethod "$baseUrl/api/owned-books" -Method Post -ContentType 'application/json' `
-        -Body (@{ title = 'Manual Book'; isRead = $true; rating = 9 } | ConvertTo-Json)
-    Assert-True ($manual.rating -eq 9 -and $null -eq $manual.sourceBookId) 'Manual entry and read rating must save.'
+        -Body (@{ title = 'Manual Book'; isRead = $true; rating = 5 } | ConvertTo-Json)
+    Assert-True ($manual.rating -eq 5 -and $null -eq $manual.sourceBookId) 'Manual entry and read rating must save.'
+    Assert-True ($null -eq $manual.genre -and $null -eq $manual.shelfLocation) 'Genre and shelf location are optional.'
     $books = Invoke-RestMethod "$baseUrl/api/owned-books"
     Assert-True ($books.Count -eq 2) 'Invalid requests must not insert records.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
@@ -98,7 +103,8 @@ try {
     Start-TestApi
     $reloaded = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
     foreach ($field in @('title', 'author', 'isbn', 'edition', 'publisher', 'publicationYear',
-            'pageCount', 'description', 'coverUrl', 'sourceBookId', 'format', 'authorGender', 'editionId')) {
+            'pageCount', 'description', 'coverUrl', 'sourceBookId', 'format', 'authorGender', 'editionId',
+            'genre', 'shelfLocation')) {
         Assert-True ($reloaded.$field -eq $saved.$field) "Persisted $field must survive restarting the API."
     }
     Write-Output 'PASS: save, normalization, validation, manual entry, listing, missing records, and persistence.'

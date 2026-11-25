@@ -8,6 +8,8 @@ export class OwnedBook {
   authorGender = '';
   rating: number | null = null;
   purchaseLocation = '';
+  shelfLocation = '';
+  genre = '';
   publicationYear: number | null = null;
   publisher = '';
   edition = '';

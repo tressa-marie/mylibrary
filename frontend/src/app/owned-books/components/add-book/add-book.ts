@@ -1,5 +1,8 @@
-import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectorRef, Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +11,8 @@ import { MatSelectModule } from '@angular/material/select';
 import { OwnedBook } from '../../models/owned-book';
 import { Book, BookService } from '../../../search/services/book.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { OwnedBookService } from '../../services/owned-book.service';
+import { CreateOwnedBookRequest } from '../../models/owned-book-api';
 
 @Component({
   selector: 'app-add-book',
@@ -27,6 +32,13 @@ export class AddBook implements OnInit {
   private readonly service = inject(BookService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly ownedBookService = inject(OwnedBookService);
+  private readonly router = inject(Router);
+  readonly loading = signal(false);
+  readonly saving = signal(false);
+  readonly successMessage = signal('');
+  readonly errorMessage = signal('');
+  readonly validationErrors = signal<string[]>([]);
 
   isRead = false;
   coverFailed = false;
@@ -37,13 +49,20 @@ export class AddBook implements OnInit {
     const urlParams = new URLSearchParams(window.location.search);
     this.bookId = urlParams.get('bookId');
     if (this.bookId) {
+      this.loading.set(true);
       // Fetch the book details using the BookService
-      this.service.get(this.bookId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-        next: (book) => this.loadBook(book),
-        error: () => {
-          // Handle error if needed
-        },
-      });
+      this.service
+        .get(this.bookId)
+        .pipe(
+          takeUntilDestroyed(this.destroyRef),
+          finalize(() => this.loading.set(false)),
+        )
+        .subscribe({
+          next: (book) => this.loadBook(book),
+          error: () => {
+            this.errorMessage.set('Book details could not be loaded. You can enter them manually.');
+          },
+        });
     }
   }
 
@@ -61,7 +80,68 @@ export class AddBook implements OnInit {
     this.changeDetector.markForCheck();
   }
 
-  addBook() {
-    //TODO add book logic will go here
+  addBook(form: NgForm) {
+    if (this.loading() || this.saving()) return;
+    this.successMessage.set('');
+    this.errorMessage.set('');
+    this.validationErrors.set([]);
+    if (form.invalid || !this.book.title.trim()) {
+      form.control.markAllAsTouched();
+      this.errorMessage.set('Enter a title and correct any invalid fields before adding the book.');
+      return;
+    }
+    const optional = (value: string | null) => value?.trim() || null;
+    const request: CreateOwnedBookRequest = {
+      sourceBookId: optional(this.bookId),
+      title: this.book.title.trim(),
+      author: this.book.author.trim(),
+      isbn: optional(this.book.isbn.replace(/[\s-]/g, '').toUpperCase()),
+      description: optional(this.book.description),
+      coverUrl: this.book.coverUrl,
+      format: optional(this.book.format),
+      authorGender: optional(this.book.authorGender),
+      isRead: this.isRead,
+      rating: this.isRead ? this.book.rating : null,
+      purchaseLocation: optional(this.book.purchaseLocation),
+      shelfLocation: optional(this.book.shelfLocation),
+      genre: optional(this.book.genre),
+      publicationYear: this.book.publicationYear,
+      publisher: optional(this.book.publisher),
+      edition: optional(this.book.edition),
+      pageCount: this.book.pageCount,
+    };
+    this.saving.set(true);
+    this.ownedBookService
+      .create(request)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.saving.set(false)),
+      )
+      .subscribe({
+        next: (saved) => {
+          this.successMessage.set(`${saved.title} was added to your library.`);
+          this.book = new OwnedBook();
+          this.bookId = null;
+          this.isRead = false;
+          this.coverFailed = false;
+          form.resetForm({ ...this.book, isRead: false });
+          void this.router.navigate(['/']);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorMessage.set(
+            error.status === 0
+              ? 'Could not reach the library service. Your entries are still here.'
+              : 'Your book could not be saved. Correct any errors and try again.',
+          );
+          if (error.status === 400 && error.error?.errors) {
+            const errors = error.error.errors as Record<string, string[]>;
+            this.validationErrors.set(
+              Object.entries(errors).flatMap(([field, messages]) =>
+                messages.map((message) => `${field}: ${message}`),
+              ),
+            );
+          }
+        },
+      });
   }
 }

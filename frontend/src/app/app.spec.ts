@@ -12,7 +12,7 @@ describe('App shell', () => {
     await fixture.whenStable();
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector('header')?.textContent).toContain('My Library');
-    expect(element.querySelector('nav')?.textContent).toContain('Home');
+    expect(element.querySelector('nav')?.textContent).toContain('Library');
     expect(element.querySelector('main')).toBeTruthy();
   });
 });

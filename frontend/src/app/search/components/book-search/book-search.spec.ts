@@ -1,8 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { BookSearch } from './book-search';
-import { Book } from '../core/book.service';
+import { Book } from '../../services/book.service';
 
 describe('Book search', () => {
   let fixture: ComponentFixture<BookSearch>;
@@ -26,7 +27,7 @@ describe('Book search', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [BookSearch],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(BookSearch);

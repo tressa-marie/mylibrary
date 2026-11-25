@@ -1,0 +1,74 @@
+<section aria-labelledby="library-title">
+  <header class="library-header">
+    <div>
+      <h1 id="library-title">Your library</h1>
+      <p>Your books, all in one place.</p>
+    </div>
+    <a class="add-book" routerLink="/add-book">Add a book</a>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="message" role="status">Loading your library…</p>
+    }
+    @case ('error') {
+      <div class="message" role="alert">
+        <h2>Could not load your library</h2>
+        <p>Please try again in a moment.</p>
+        <button type="button" (click)="loadBooks()">Try again</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (books().length) {
+        <p class="book-count" role="status">
+          {{ books().length }} {{ books().length === 1 ? 'book' : 'books' }} in your library
+        </p>
+        <div class="table-container" role="region" aria-label="Library books" tabindex="0">
+          <table>
+            <caption class="visually-hidden">
+              Books in your library, sorted by title
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Author</th>
+                <th scope="col">Genre</th>
+                <th scope="col">Read status</th>
+                <th scope="col">Rating</th>
+                <th scope="col">Shelf location</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (book of books(); track book.id) {
+                <tr>
+                  <th scope="row">{{ book.title || '-' }}</th>
+                  <td>{{ book.author || '-' }}</td>
+                  <td>{{ book.genre || '-' }}</td>
+                  <td>
+                    <span class="read-status" [class.read]="book.isRead">{{
+                      book.isRead ? 'Read' : 'Unread'
+                    }}</span>
+                  </td>
+                  <td>
+                    @if (book.isRead && book.rating !== null) {
+                      {{ book.rating }}
+                    } @else {
+                      <span class="muted">-</span>
+                    }
+                  </td>
+                  <td>{{ book.shelfLocation || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="message" role="status">
+          <h2>Your library is empty</h2>
+          <p>Add your first book to start your collection.</p>
+          <a routerLink="/search">Search for a book</a>
+        </div>
+      }
+    }
+  }
+</section>

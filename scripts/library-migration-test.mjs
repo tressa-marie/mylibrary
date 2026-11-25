@@ -52,6 +52,14 @@ try {
   inspect(db => assert.deepEqual({ ...db.prepare('SELECT * FROM OwnedBooks').get() }, original));
   migrate('NormalizeLibraryBooks');
   inspect(db => assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []));
+  migrate('AddGenreAndShelfLocation');
+  inspect(db => {
+    const row = db.prepare(`SELECT b.Title, b.Genre, o.ShelfLocation
+      FROM OwnedBooks o JOIN Editions e ON o.EditionId = e.Id
+      JOIN Books b ON e.BookId = b.Id`).get();
+    assert.deepEqual({ ...row }, { Title: original.Title, Genre: null, ShelfLocation: null });
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  });
   console.log('PASS: existing records survive upgrade, rollback, and reapplication; foreign keys protect relationships.');
 } finally {
   assert.equal(dirname(resolve(directory)), resolve(tmpdir()));

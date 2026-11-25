@@ -15,12 +15,13 @@ export const routes: Routes = [
   },
   {
     path: 'search',
-    loadComponent: () => import('./search/components/book-search/book-search').then((m) => m.BookSearch),
+    loadComponent: () =>
+      import('./search/components/book-search/book-search').then((m) => m.BookSearch),
     title: 'Search books | My Library',
   },
   {
     path: '',
-    loadComponent: () => import('./home/home').then((m) => m.Home),
+    loadComponent: () => import('./owned-books/components/library/library').then((m) => m.Library),
     title: 'My Library',
   },
   { path: '**', redirectTo: '' },

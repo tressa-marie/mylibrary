@@ -1,8 +1,7 @@
 # My Library
 
 An Angular frontend and ASP.NET Core Web API foundation for My Library. The UI
-includes an application header, navigation, main content area, and a live
-connection-status panel.
+includes a library table, book search, and an Add Book form backed by SQLite.
 
 ## Prerequisites
 
@@ -37,22 +36,22 @@ npm ci
 npm start
 ```
 
-Open **http://localhost:4200**. The home page checks the API automatically and
-displays **Connected** when the health check succeeds. **Check again** repeats
-the request. Stop either application with `Ctrl+C` in its terminal.
+Open **http://localhost:4200**. The Library page loads saved books and displays
+title, author, genre, read status, rating (out of 5 for read books), and shelf
+location. Use **Add a book** to grow your library. Genre and shelf location are
+optional fields on the form. Stop either application with `Ctrl+C` in its terminal.
 
 This local setup uses HTTP and does not require a trusted HTTPS certificate.
 
 ## How the connection works
 
-The Angular `HealthService` calls the relative URL `/api/health` with a five-second
-timeout. The Angular development server forwards `/api/**` requests to
+The Library page calls `/api/library/books`. The Angular development server forwards `/api/**` requests to
 `http://localhost:5080` using `frontend/proxy.conf.json`. Browser requests stay on
 the frontend origin, so no CORS policy is needed for this development setup.
 
 The API uses ASP.NET Core health checks and returns a JSON status. This is a basic
-liveness check; it does not test a database or other dependencies. A failed
-request, timeout, or unhealthy status displays **Unable to connect** in the UI.
+liveness check; it does not test a database or other dependencies. If loading
+books fails, the Library page displays an error with a **Try again** button.
 
 The proxy is only active during `npm start` / `ng serve`. Production hosting and
 API routing are outside this scaffold's scope.
@@ -77,11 +76,10 @@ node scripts/smoke-test.mjs
 
 It checks the API directly, confirms Angular serves its application page, and
 checks the same API response through Angular's proxy. Component tests cover the
-shell, startup health request, successful connection, failure, and retry.
+shell, library loading, rows and missing metadata, empty state, failure, and retry.
 
-For a manual failure check, stop the API and click **Check again** in the UI.
-It should display **Unable to connect**. Restart the API and check again to
-restore **Connected**.
+For a manual failure check, stop the API and reload the Library page. It should
+display **Could not load your library**. Restart the API and click **Try again**.
 
 ## Layout
 
@@ -89,7 +87,7 @@ restore **Connected**.
 backend/MyLibrary.Api/        ASP.NET Core 10 minimal Web API
 frontend/src/app/            Angular 21 shell and routes
 frontend/src/app/core/       HTTP health service
-frontend/src/app/home/       Home page and connection-status tests
+frontend/src/app/owned-books/ Library table, Add Book form, service, and tests
 frontend/proxy.conf.json     Local API proxy
 scripts/smoke-test.mjs       Live frontend/API smoke check
 ```
@@ -196,7 +194,7 @@ $book = @{
     format = 'Paperback'
     publicationYear = 1968
     isRead = $true
-    rating = 9
+    rating = 5
     purchaseLocation = 'Local bookshop'
 } | ConvertTo-Json
 Invoke-RestMethod http://localhost:5080/api/library/books -Method Post -ContentType 'application/json' -Body $book
@@ -204,9 +202,11 @@ Invoke-RestMethod http://localhost:5080/api/library/books
 ```
 
 Only title is required. Optional fields also include `sourceBookId`, `isbn`,
-`description`, `coverUrl`, `authorGender`, `publisher`, `edition`, and `pageCount`.
+`description`, `coverUrl`, `authorGender`, `publisher`, `edition`, `pageCount`,
+`genre` (up to 100 characters), and `shelfLocation` (up to 500 characters).
+`AddGenreAndShelfLocation` adds nullable fields so existing books remain compatible.
 Strings are trimmed, ISBN separators are removed, and unread books have no rating.
-Invalid input returns `400` with field errors: rating must be 0–10, year and page
+Invalid input returns `400` with field errors: rating must be 0–5, year and page
 count cannot be negative, and ISBN must contain 10 or 13 valid characters. Covers
 must use `/api/books/{sourceBookId}/cover`. No Google Books key is needed to add or
 list library records.
