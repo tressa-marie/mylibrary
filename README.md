@@ -222,3 +222,53 @@ Run persistence/API checks and migration preservation checks with temporary data
 powershell -NoProfile -ExecutionPolicy Bypass -File backend/tests/OwnedBooks.Smoke.ps1
 node scripts/library-migration-test.mjs
 ```
+
+## Shelves API
+
+Shelves are stored in SQLite with `id`, `name`, `room`, and `description`.
+Responses also include `bookIds`, derived from the saved library copies assigned
+to the shelf. A book can belong to one shelf or have no shelf. These use library
+copy IDs (`OwnedBook.Id`), rather than Google Books, work, or edition IDs.
+Shelves currently belong to the single local library; per-user isolation awaits
+authentication. The frontend has not been changed to use these endpoints.
+
+| Method | Endpoint | Behavior |
+| --- | --- | --- |
+| POST | `/api/shelves` | Create a shelf; returns `201`, the shelf, and its `Location`. |
+| GET | `/api/shelves` | List shelves ordered by name, including `bookIds`; empty list is `[]`. |
+| GET | `/api/shelves/{id}` | Get one shelf, or `404` if missing. |
+| PUT | `/api/shelves/{id}` | Replace shelf details and book assignments; returns the updated shelf, or `404`. |
+| DELETE | `/api/shelves/{id}` | Delete a shelf and unassign its books; returns `204`, or `404` if missing. |
+
+POST and PUT accept the same JSON shape (the server generates `id`):
+
+```json
+{
+  "name": "Favorites",
+  "room": "Study",
+  "description": "Books to reread",
+  "bookIds": []
+}
+```
+
+Name is required (1–200 characters after trimming). Room (up to 200 characters)
+and description (up to 2000 characters) are optional; blank values become null.
+`bookIds` defaults to an empty array and accepts up to 1000 distinct existing
+library book IDs. Invalid fields or unknown book IDs return `400` with field
+errors without applying changes. PUT replaces the entire membership list:
+omitting `bookIds` or providing `[]` clears the shelf. Assigning an existing
+book to a different shelf moves it; books are never duplicated or deleted.
+
+`POST /api/library/books` and its `/api/owned-books` alias also accept an optional
+`shelfId`; it must identify an existing shelf. Book responses include `shelfId`,
+which becomes null when that shelf is deleted. The legacy `shelfLocation` string
+is preserved separately for compatibility; creating or renaming shelves does
+not reinterpret or overwrite existing free-text locations.
+
+Development startup applies the `AddShelves` migration. To verify shelf CRUD,
+membership changes, persistence, and safe deletion using a temporary database:
+
+```powershell
+dotnet build backend/MyLibrary.Api --configuration Verification
+node backend/tests/shelves-api-test.mjs
+```

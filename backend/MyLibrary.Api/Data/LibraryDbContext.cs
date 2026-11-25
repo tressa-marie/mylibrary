@@ -10,6 +10,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
     public DbSet<OwnedBook> OwnedBooks => Set<OwnedBook>();
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Edition> Editions => Set<Edition>();
+    public DbSet<Shelf> Shelves => Set<Shelf>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -39,6 +40,14 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
                 .OnDelete(DeleteBehavior.Restrict);
             owned.Property(x => x.PurchaseLocation).HasMaxLength(500);
             owned.Property(x => x.ShelfLocation).HasMaxLength(500);
+            owned.HasOne(x => x.Shelf).WithMany(x => x.Books).HasForeignKey(x => x.ShelfId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+        modelBuilder.Entity<Shelf>(shelf =>
+        {
+            shelf.Property(x => x.Name).IsRequired().HasMaxLength(200);
+            shelf.Property(x => x.Room).HasMaxLength(200);
+            shelf.Property(x => x.Description).HasMaxLength(2000);
         });
     }
 }

@@ -10,10 +10,15 @@ const directory = mkdtempSync(join(tmpdir(), 'mylibrary-migration-'));
 const database = join(directory, 'library.db');
 const initial = '20261006000559_InitialLibrary';
 function migrate(target) {
-  execFileSync('dotnet', ['ef', 'database', 'update', target,
-    '--project', resolve('backend/MyLibrary.Api'), '--configuration', 'Verification',
-    '--no-build', '--connection', `Data Source=${database}`],
-  { windowsHide: true, stdio: 'pipe' });
+  try {
+    execFileSync('dotnet', ['ef', 'database', 'update', target,
+      '--project', resolve('backend/MyLibrary.Api'), '--configuration', 'Verification',
+      '--no-build', '--connection', `Data Source=${database}`],
+    { windowsHide: true, stdio: 'pipe',
+      env: { ...process.env, Logging__EventLog__LogLevel__Default: 'None' } });
+  } catch (error) {
+    throw new Error(`Migration to ${target} failed:\n${error.stdout?.toString()}\n${error.stderr?.toString()}`);
+  }
 }
 function inspect(check) {
   const db = new DatabaseSync(database);
@@ -60,6 +65,17 @@ try {
     assert.deepEqual({ ...row }, { Title: original.Title, Genre: null, ShelfLocation: null });
     assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   });
+  migrate('AddShelves');
+  inspect(db => {
+    const row = db.prepare('SELECT Id, ShelfId FROM OwnedBooks').get();
+    assert.deepEqual({ ...row }, { Id: original.Id, ShelfId: null });
+    assert.equal(db.prepare('SELECT COUNT(*) AS count FROM Shelves').get().count, 0);
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  });
+  migrate('AddGenreAndShelfLocation');
+  inspect(db => assert.equal(db.prepare('SELECT Id FROM OwnedBooks').get().Id, original.Id));
+  migrate('AddShelves');
+  inspect(db => assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []));
   console.log('PASS: existing records survive upgrade, rollback, and reapplication; foreign keys protect relationships.');
 } finally {
   assert.equal(dirname(resolve(directory)), resolve(tmpdir()));

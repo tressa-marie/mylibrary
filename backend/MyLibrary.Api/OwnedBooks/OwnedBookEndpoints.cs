@@ -22,6 +22,8 @@ public static class OwnedBookEndpoints
         {
             var book = request.ToEntity();
             var errors = CreateOwnedBookRequest.Validate(book);
+            if (book.ShelfId is { } shelfId && !await db.Shelves.AnyAsync(x => x.Id == shelfId, ct))
+                errors["shelfId"] = ["Choose an existing shelf, or leave it blank."];
             if (errors.Count > 0) return Results.ValidationProblem(errors);
             db.OwnedBooks.Add(book);
             try

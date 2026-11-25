@@ -99,6 +99,30 @@ namespace MyLibrary.Api.Migrations
                     b.ToTable("Editions");
                 });
 
+            modelBuilder.Entity("MyLibrary.Api.Domain.Shelf", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Room")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Shelves");
+                });
+
             modelBuilder.Entity("MyLibrary.Api.OwnedBooks.OwnedBook", b =>
                 {
                     b.Property<Guid>("Id")
@@ -121,6 +145,9 @@ namespace MyLibrary.Api.Migrations
                     b.Property<double?>("Rating")
                         .HasColumnType("REAL");
 
+                    b.Property<Guid?>("ShelfId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ShelfLocation")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
@@ -128,6 +155,8 @@ namespace MyLibrary.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EditionId");
+
+                    b.HasIndex("ShelfId");
 
                     b.ToTable("OwnedBooks");
                 });
@@ -151,7 +180,19 @@ namespace MyLibrary.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("MyLibrary.Api.Domain.Shelf", "Shelf")
+                        .WithMany("Books")
+                        .HasForeignKey("ShelfId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("EditionDetails");
+
+                    b.Navigation("Shelf");
+                });
+
+            modelBuilder.Entity("MyLibrary.Api.Domain.Shelf", b =>
+                {
+                    b.Navigation("Books");
                 });
 #pragma warning restore 612, 618
         }

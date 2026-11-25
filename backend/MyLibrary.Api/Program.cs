@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MyLibrary.Api.Books;
 using MyLibrary.Api.Data;
 using MyLibrary.Api.OwnedBooks;
+using MyLibrary.Api.Shelves;
 
 var builder = WebApplication.CreateBuilder(args);
 var libraryConnectionString = builder.Configuration.GetConnectionString("Library")
@@ -30,6 +31,7 @@ if (string.IsNullOrWhiteSpace(builder.Configuration["Books:ApiKey"]))
     app.Logger.LogWarning("Books:ApiKey is not configured. Set Books__ApiKey in the terminal that starts the API.");
 app.MapBooks();
 app.MapOwnedBooks();
+app.MapShelves();
 
 app.MapHealthChecks("/api/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

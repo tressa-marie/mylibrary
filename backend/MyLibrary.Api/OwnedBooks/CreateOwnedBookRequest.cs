@@ -16,6 +16,7 @@ public sealed class CreateOwnedBookRequest
     public double? Rating { get; set; }
     public string? PurchaseLocation { get; set; }
     public string? ShelfLocation { get; set; }
+    public Guid? ShelfId { get; set; }
     public string? Genre { get; set; }
     public int? PublicationYear { get; set; }
     public string? Publisher { get; set; }
@@ -39,6 +40,7 @@ public sealed class CreateOwnedBookRequest
         Rating = IsRead ? Rating : null,
         PurchaseLocation = Optional(PurchaseLocation),
         ShelfLocation = Optional(ShelfLocation),
+        ShelfId = ShelfId,
         Genre = Optional(Genre),
         PublicationYear = PublicationYear,
         Publisher = Optional(Publisher),
