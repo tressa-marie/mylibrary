@@ -11,6 +11,63 @@
     <button type="button" (click)="loadBooks()">Try again</button>
   </div>
 } @else {
+  <section class="chart-card" aria-labelledby="genre-heading">
+    <h2 id="genre-heading">Books by genre</h2>
+    <p id="genre-description">
+      Each book counts once in each of its genres. Books without a genre are excluded.
+    </p>
+    @if (genres().length) {
+      <div class="genre-chart-layout">
+        <div class="genre-chart-container" [style.height.px]="80 + genres().length * 40">
+          <canvas
+            #genreChart
+            role="img"
+            aria-label="Horizontal bar chart of books by genre"
+            aria-describedby="genre-description genre-table"
+          ></canvas>
+        </div>
+      </div>
+      <details class="genre-data">
+        <summary>View genre counts</summary>
+        <table id="genre-table">
+          <caption>
+            Number of books in each genre
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Genre</th>
+              <th scope="col">Books</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (genre of genres(); track genre.label) {
+              <tr>
+                <th scope="row">
+                  <span
+                    class="swatch"
+                    [style.background-color]="genre.color"
+                    aria-hidden="true"
+                  ></span
+                  >{{ genre.label }}
+                </th>
+                <td>{{ genre.count }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </details>
+    } @else if (libraryTotal()) {
+      <div class="message">
+        <p>No genres have been recorded for this chart yet.</p>
+        <a routerLink="/">Edit books in your library</a>
+      </div>
+    } @else {
+      <div class="message">
+        <p>Add your first book to see your genre breakdown.</p>
+        <a routerLink="/search">Find a book</a>
+      </div>
+    }
+  </section>
   <section class="chart-card" aria-labelledby="reading-heading">
     <h2 id="reading-heading">Read and unread books</h2>
     <p id="reading-description">Your reading progress across all books in your library.</p>

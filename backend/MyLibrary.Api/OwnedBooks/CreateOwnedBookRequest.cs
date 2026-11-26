@@ -14,6 +14,11 @@ public sealed class CreateOwnedBookRequest
     public string? AuthorGender { get; set; }
     public bool IsRead { get; set; }
     public double? Rating { get; set; }
+    public bool? IsDnf { get; set; }
+    public bool? WantToSell { get; set; }
+    public decimal? BookCost { get; set; }
+    public DateOnly? DateAcquired { get; set; }
+    public DateOnly? DateRead { get; set; }
     public string? PurchaseLocation { get; set; }
     public string? ShelfLocation { get; set; }
     public Guid? ShelfId { get; set; }
@@ -46,6 +51,11 @@ public sealed class CreateOwnedBookRequest
         book.AuthorGender = Optional(AuthorGender);
         book.IsRead = IsRead;
         book.Rating = IsRead ? Rating : null;
+        book.IsDnf = IsDnf;
+        book.WantToSell = WantToSell;
+        book.BookCost = BookCost;
+        book.DateAcquired = DateAcquired;
+        book.DateRead = DateRead;
         book.PurchaseLocation = Optional(PurchaseLocation);
         book.ShelfLocation = Optional(ShelfLocation);
         book.ShelfId = ShelfId;
@@ -87,6 +97,7 @@ public sealed class CreateOwnedBookRequest
             Error("rating", "Rating must be between 0 and 5.");
         if (book.PublicationYear < 0) Error("publicationYear", "Publication year cannot be negative.");
         if (book.PageCount < 0) Error("pageCount", "Page count cannot be negative.");
+        if (book.BookCost < 0) Error("bookCost", "Book cost cannot be negative.");
         // Covers are served through our existing Google Books cover endpoint.
         if (book.CoverUrl is { } cover && (book.SourceBookId is null || cover != $"/api/books/{book.SourceBookId}/cover"))
             Error("coverUrl", "Use the selected book's cover, or leave it blank.");

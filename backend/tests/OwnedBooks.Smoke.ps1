@@ -13,6 +13,14 @@ function Assert-True($condition, [string]$message) {
     if (-not $condition) { throw $message }
 }
 
+function Assert-SameBook($actual, $expected, [string]$message) {
+    # SQLite may return decimal zero as 0.0; compare the cost numerically.
+    Assert-True ($actual.bookCost -eq $expected.bookCost) $message
+    $actualJson = $actual | Select-Object * -ExcludeProperty bookCost | ConvertTo-Json -Compress
+    $expectedJson = $expected | Select-Object * -ExcludeProperty bookCost | ConvertTo-Json -Compress
+    Assert-True ($actualJson -eq $expectedJson) $message
+}
+
 function Start-TestApi {
     $script:launchNumber++
     $dll = Join-Path $apiProject "bin/$Configuration/net10.0/MyLibrary.Api.dll"
@@ -58,6 +66,8 @@ try {
         isRead = $false; rating = 4; purchaseLocation = ' Local store '; publicationYear = 2020
         publisher = 'Vintage'; edition = 'First'; pageCount = 498
         genres = @(' Fantasy ', 'Adventure', 'fantasy', '  '); shelfLocation = ' Living room, shelf 2 '
+        isDnf = $true; wantToSell = $false; bookCost = 19.95
+        dateAcquired = '2026-01-15'; dateRead = '2026-02-20'
     }
     $response = Invoke-WebRequest "$baseUrl/api/library/books" -Method Post -ContentType 'application/json' `
         -Body ($payload | ConvertTo-Json) -UseBasicParsing
@@ -68,6 +78,9 @@ try {
     Assert-True ($saved.isbn -eq '9781784702861') 'ISBN must be normalized.'
     Assert-True ($null -eq $saved.rating) 'Unread books must have no rating.'
     Assert-True ($saved.purchaseLocation -eq 'Local store') 'Purchase location must be trimmed.'
+    Assert-True ($saved.isDnf -eq $true -and $saved.wantToSell -eq $false) 'Optional status flags must retain explicit true and false.'
+    Assert-True ($saved.bookCost -eq 19.95) 'Book cost must retain its decimal value.'
+    Assert-True ($saved.dateAcquired -eq '2026-01-15' -and $saved.dateRead -eq '2026-02-20') 'Dates must use date-only strings.'
     Assert-True (($saved.genres -join '|') -eq 'Fantasy|Adventure') 'Genres must be trimmed, deduplicated, and saved as an array.'
     Assert-True ($saved.shelfLocation -eq 'Living room, shelf 2') 'Shelf location must be trimmed and saved.'
     Assert-True ($saved.pageCount -eq 498 -and $saved.description -eq $payload.description) 'Metadata must be retained.'
@@ -78,6 +91,9 @@ try {
 
     foreach ($invalid in @(@{ title = '   ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
             @{ title = 'Invalid'; pageCount = -1 }, @{ title = 'Invalid'; isbn = 'wrong' },
+            @{ title = 'Invalid'; bookCost = -0.01 }, @{ title = 'Invalid'; bookCost = 'abc' },
+            @{ title = 'Invalid'; dateAcquired = '2026-02-30' }, @{ title = 'Invalid'; dateRead = 'not a date' },
+            @{ title = 'Invalid'; isDnf = 'yes' }, @{ title = 'Invalid'; wantToSell = 1 },
             @{ title = 'Invalid'; genres = @(('x' * 101)) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) })) {
         $status = 0
         try {
@@ -91,16 +107,23 @@ try {
     Assert-True ($manual.authorGender -eq 'unknown') 'Explicit Unknown gender must be saved separately from blank values.'
     Assert-True ($manual.rating -eq 5 -and $null -eq $manual.sourceBookId) 'Manual entry and read rating must save.'
     Assert-True ($manual.genres.Count -eq 0 -and $null -eq $manual.shelfLocation) 'Genres default to an empty array and shelf location is optional.'
+    foreach ($field in @('isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead')) {
+        Assert-True ($null -eq $manual.$field) "Omitted tracking field $field must default to null."
+    }
     $books = Invoke-RestMethod "$baseUrl/api/owned-books"
     Assert-True ($books.Count -eq 2) 'Invalid requests must not insert records.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
     Assert-True ($library.Count -eq 2) 'Both routes must expose the same library.'
-    $expectedFields = @('id', 'title', 'author', 'genres', 'isRead', 'rating', 'shelfId', 'shelfLocation', 'authorGender') | Sort-Object
+    $expectedFields = @('id', 'title', 'author', 'genres', 'isRead', 'rating', 'shelfId', 'shelfLocation', 'authorGender',
+        'isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead') | Sort-Object
     foreach ($summary in $library) {
         $fields = $summary.PSObject.Properties.Name | Sort-Object
         Assert-True (($fields -join ',') -eq ($expectedFields -join ',')) 'The list endpoint must return only library summary fields.'
     }
     $summary = $library | Where-Object { $_.id -eq $saved.id }
+    foreach ($field in @('isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead')) {
+        Assert-True ($summary.$field -eq $saved.$field) "List summaries must include $field."
+    }
     Assert-True ($summary.title -eq $saved.title -and $summary.author -eq $saved.author `
         -and ($summary.genres -join '|') -eq ($saved.genres -join '|') `
         -and $summary.shelfLocation -eq $saved.shelfLocation `
@@ -115,7 +138,7 @@ try {
     $reloaded = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
     foreach ($field in @('title', 'author', 'isbn', 'edition', 'publisher', 'publicationYear',
             'pageCount', 'description', 'coverUrl', 'sourceBookId', 'format', 'authorGender', 'editionId',
-            'genres', 'shelfLocation')) {
+            'genres', 'shelfLocation', 'isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead')) {
         Assert-True ((ConvertTo-Json -InputObject $reloaded.$field -Compress) -eq (ConvertTo-Json -InputObject $saved.$field -Compress)) "Persisted $field must survive restarting the API."
     }
     $firstShelf = Invoke-RestMethod "$baseUrl/api/shelves" -Method Post -ContentType 'application/json' `
@@ -129,6 +152,8 @@ try {
         purchaseLocation = ' New store '; publicationYear = 2024; publisher = ' New publisher '
         edition = ' Second '; pageCount = 300; genres = @(' Mystery ', 'Crime'); shelfLocation = ' Study shelf '
         shelfId = $firstShelf.id
+        isDnf = $false; wantToSell = $true; bookCost = 0
+        dateAcquired = '2025-12-25'; dateRead = '2026-03-01'
         # Server-controlled fields must not be overwritten by request JSON.
         id = [guid]::NewGuid(); editionId = [guid]::NewGuid(); createdAtUtc = '2000-01-01T00:00:00Z'
     }
@@ -136,6 +161,8 @@ try {
         -ContentType 'application/json' -Body ($updatePayload | ConvertTo-Json) -UseBasicParsing
     Assert-True ($updateResponse.StatusCode -eq 200) 'A valid PUT must return 200.'
     $updated = $updateResponse.Content | ConvertFrom-Json
+    Assert-True ($updated.isDnf -eq $false -and $updated.wantToSell -eq $true -and $updated.bookCost -eq 0) 'PUT must update flags and allow a zero cost.'
+    Assert-True ($updated.dateAcquired -eq '2025-12-25' -and $updated.dateRead -eq '2026-03-01') 'PUT must update date-only values.'
     Assert-True ($updated.id -eq $saved.id -and $updated.editionId -eq $saved.editionId `
         -and $updated.createdAtUtc -eq $saved.createdAtUtc) 'PUT must preserve IDs and creation time.'
     Assert-True ($updated.title -eq 'Updated Library Book' -and $updated.author -eq 'Updated Author') 'Updated work fields must be normalized.'
@@ -161,6 +188,8 @@ try {
 
     foreach ($invalid in @(@{ title = ' ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
             @{ title = 'Invalid'; isbn = 'bad' }, @{ title = 'Invalid'; pageCount = -1 },
+            @{ title = 'Invalid'; bookCost = -1 }, @{ title = 'Invalid'; dateAcquired = 'bad' },
+            @{ title = 'Invalid'; dateRead = '2026-13-01' },
             @{ title = 'Invalid'; publicationYear = -1 }, @{ title = 'Invalid'; shelfId = [guid]::NewGuid() },
             @{ title = 'Invalid'; genres = @(('x' * 101)) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) },
             @{ title = 'Invalid'; sourceBookId = 'bad id' }, @{ title = 'Invalid'; coverUrl = 'https://example.com/cover' })) {
@@ -171,8 +200,7 @@ try {
         } catch { $status = [int]$_.Exception.Response.StatusCode }
         Assert-True ($status -eq 400) 'Invalid PUT data must return 400.'
         $unchanged = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
-        Assert-True (($unchanged | ConvertTo-Json -Compress) -eq ($updated | ConvertTo-Json -Compress)) `
-            'Rejected updates must not change any persisted fields.'
+        Assert-SameBook $unchanged $updated 'Rejected updates must not change any persisted fields.'
     }
     $status = 0
     try {
@@ -186,7 +214,8 @@ try {
     $cleared = Invoke-RestMethod "$baseUrl/api/owned-books/$($saved.id)" -Method Put -ContentType 'application/json' `
         -Body (@{ title = 'Minimal update'; isRead = $false; rating = 5 } | ConvertTo-Json)
     foreach ($field in @('sourceBookId', 'isbn', 'description', 'coverUrl', 'format', 'authorGender', 'rating',
-            'purchaseLocation', 'shelfLocation', 'shelfId', 'publicationYear', 'publisher', 'edition', 'pageCount')) {
+            'purchaseLocation', 'shelfLocation', 'shelfId', 'publicationYear', 'publisher', 'edition', 'pageCount',
+            'isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead')) {
         Assert-True ($null -eq $cleared.$field) "Omitted optional field $field must be cleared by PUT."
     }
     Assert-True ($cleared.genres.Count -eq 0) 'Omitting genres from PUT must clear the array.'
@@ -194,13 +223,19 @@ try {
     $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($secondShelf.id)"
     Assert-True ($shelf.bookIds.Count -eq 0) 'Clearing shelfId must remove shelf membership.'
 
+    $nulls = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)" -Method Put -ContentType 'application/json' `
+        -Body (@{ title = 'Explicit nulls'; isDnf = $null; wantToSell = $null; bookCost = $null;
+            dateAcquired = $null; dateRead = $null } | ConvertTo-Json)
+    foreach ($field in @('isDnf', 'wantToSell', 'bookCost', 'dateAcquired', 'dateRead')) {
+        Assert-True ($null -eq $nulls.$field) "Explicit null must be accepted for $field."
+    }
+
     $updated = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)" -Method Put -ContentType 'application/json' `
         -Body ($updatePayload | ConvertTo-Json)
     Stop-TestApi
     Start-TestApi
     $reloaded = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
-    Assert-True (($reloaded | ConvertTo-Json -Compress) -eq ($updated | ConvertTo-Json -Compress)) `
-        'All updated metadata and ownership fields must survive restart.'
+    Assert-SameBook $reloaded $updated 'All updated metadata and ownership fields must survive restart.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
     Assert-True ($library.Count -eq 2) 'PUT must not insert duplicate library books.'
     Write-Output 'PASS: create, update, normalization, validation, shelf moves/removal, immutable IDs, missing records, and persistence.'

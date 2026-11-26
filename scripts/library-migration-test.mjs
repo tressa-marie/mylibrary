@@ -86,6 +86,26 @@ try {
   inspect(db => assert.equal(db.prepare('SELECT Genre FROM Books').get().Genre, 'Fantasy "Classic"'));
   migrate('AddBookGenres');
   inspect(db => assert.deepEqual(JSON.parse(db.prepare('SELECT Genres FROM Books').get().Genres), ['Fantasy "Classic"']));
+  migrate('AddOwnedBookTrackingFields');
+  inspect(db => {
+    const row = db.prepare('SELECT Id, IsDnf, WantToSell, BookCost, DateAcquired, DateRead FROM OwnedBooks').get();
+    assert.deepEqual({ ...row }, {
+      Id: original.Id, IsDnf: null, WantToSell: null, BookCost: null, DateAcquired: null, DateRead: null,
+    });
+    db.prepare('UPDATE OwnedBooks SET IsDnf = ?, WantToSell = ?, BookCost = ?, DateAcquired = ?, DateRead = ?')
+      .run(1, 0, '19.95', '2026-01-15', '2026-02-20');
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  });
+  migrate('AddBookGenres');
+  inspect(db => {
+    assert.equal(db.prepare('SELECT Id FROM OwnedBooks').get().Id, original.Id);
+    assert.deepEqual(JSON.parse(db.prepare('SELECT Genres FROM Books').get().Genres), ['Fantasy "Classic"']);
+  });
+  migrate('AddOwnedBookTrackingFields');
+  inspect(db => {
+    assert.equal(db.prepare('SELECT BookCost FROM OwnedBooks').get().BookCost, null);
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  });
   console.log('PASS: existing records survive upgrade, rollback, and reapplication; foreign keys protect relationships.');
 } finally {
   assert.equal(dirname(resolve(directory)), resolve(tmpdir()));

@@ -192,8 +192,8 @@ dotnet ef database update --project backend/MyLibrary.Api
   copy, edition, and book in one transaction; duplicates are allowed.
 - `GET /api/library/books` returns an array of lightweight library summaries, or
   `[]` for an empty library. Each summary contains `id`, `title`, `author`,
-  `genres`, `isRead`, `rating`, `shelfId`, `shelfLocation`, and `authorGender` for
-  the Stats page. The database query
+  `genres`, `isRead`, `rating`, `shelfId`, `shelfLocation`, `authorGender`,
+  `isDnf`, `wantToSell`, `bookCost`, `dateAcquired`, and `dateRead`. The database query
   selects only these fields; descriptions and other detail fields are retrieved
   separately by ID. No Google Books request is made.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.
@@ -234,6 +234,25 @@ Only title is required. Optional fields also include `sourceBookId`, `isbn`,
 `genres` (an array of strings, each up to 100 characters), and `shelfLocation`
 (up to 500 characters). Genres are trimmed, blank entries removed, and duplicates
 merged without regard to case. Missing genres are returned as `[]`.
+
+Library copies also support these optional tracking fields on POST, PUT, and
+list/detail responses (including the `/api/owned-books` aliases):
+
+| Field | JSON value | Meaning |
+| --- | --- | --- |
+| `isDnf` | boolean or null | Did not finish status. |
+| `wantToSell` | boolean or null | Whether you want to sell this copy. |
+| `bookCost` | number or null | Nonnegative decimal cost; zero is allowed. |
+| `dateAcquired` | `YYYY-MM-DD` string or null | Date the copy was acquired. |
+| `dateRead` | `YYYY-MM-DD` string or null | Date the book was read. |
+
+All five default to null for existing books and when omitted on creation.
+PUT replaces the full editable state, so omitted or explicitly null tracking
+fields are cleared. Dates have no time or timezone; invalid dates and negative
+costs return 400. These values are stored independently of `isRead` and `rating`.
+The `AddOwnedBookTrackingFields` migration adds nullable columns and is applied
+automatically on Development startup.
+
 `AddGenreAndShelfLocation` adds nullable fields so existing books remain compatible.
 `AddBookGenres` converts an existing genre into a one-item array and missing
 genres into empty arrays. Add Book and Edit Book use removable genre pills:

@@ -15,7 +15,7 @@ namespace MyLibrary.Api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.15");
 
             modelBuilder.Entity("MyLibrary.Api.Domain.Book", b =>
                 {
@@ -129,11 +129,23 @@ namespace MyLibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<decimal?>("BookCost")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("DateAcquired")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("DateRead")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("EditionId")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool?>("IsDnf")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("INTEGER");
@@ -151,6 +163,9 @@ namespace MyLibrary.Api.Migrations
                     b.Property<string>("ShelfLocation")
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool?>("WantToSell")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
