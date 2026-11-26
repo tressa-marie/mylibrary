@@ -1,0 +1,110 @@
+<section class="book-details" aria-labelledby="details-title">
+  <div class="details-actions">
+    <a class="back-link" routerLink="/">← Back to library</a>
+  </div>
+  @switch (state()) {
+    @case ('loading') {
+      <h1 id="details-title">Book details</h1>
+      <p role="status">Loading book details…</p>
+    }
+    @case ('missing') {
+      <div class="message" role="alert">
+        <h1 id="details-title">Book not found</h1>
+        <p>This book could not be found in your library.</p>
+      </div>
+    }
+    @case ('error') {
+      <div class="message" role="alert">
+        <h1 id="details-title">Could not load book details</h1>
+        <p>Please try again in a moment.</p>
+        <button type="button" (click)="retry()">Try again</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (book(); as saved) {
+        <div class="details-layout">
+          <aside class="cover-column" aria-label="Book cover">
+            @if (saved.coverUrl && !coverFailed()) {
+              <img
+                [src]="saved.coverUrl"
+                [alt]="'Cover of ' + saved.title"
+                (error)="coverFailed.set(true)"
+              />
+            } @else {
+              <div class="cover-placeholder">No cover available</div>
+            }
+          </aside>
+          <div>
+            <div class="title-row">
+              <h1 id="details-title">{{ saved.title || '-' }}</h1>
+              <a class="edit-book" [routerLink]="['/library/books', saved.id, 'edit']">Edit Book</a>
+            </div>
+            <p class="author">{{ saved.author || '-' }}</p>
+            <dl>
+              <div>
+                <dt>Genres</dt>
+                <dd>
+                  @if (saved.genres.length) {
+                    <ul class="genre-tags" aria-label="Genres">
+                      @for (genre of saved.genres; track genre) {
+                        <li>{{ genre }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    -
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Read status</dt>
+                <dd>{{ saved.isRead ? 'Read' : 'Unread' }}</dd>
+              </div>
+              <div>
+                <dt>Rating</dt>
+                <dd>{{ saved.isRead ? (saved.rating ?? '-') : '-' }}</dd>
+              </div>
+              <div>
+                <dt>Shelf location</dt>
+                <dd>{{ saved.shelfLocation || '-' }}</dd>
+              </div>
+              <div>
+                <dt>ISBN</dt>
+                <dd>{{ saved.isbn || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Format</dt>
+                <dd>{{ saved.format || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Publisher</dt>
+                <dd>{{ saved.publisher || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Publication year</dt>
+                <dd>{{ saved.publicationYear ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt>Edition</dt>
+                <dd>{{ saved.edition || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Page count</dt>
+                <dd>{{ saved.pageCount ?? '-' }}</dd>
+              </div>
+              <div>
+                <dt>Author gender</dt>
+                <dd>{{ saved.authorGender || '-' }}</dd>
+              </div>
+              <div>
+                <dt>Purchase location</dt>
+                <dd>{{ saved.purchaseLocation || '-' }}</dd>
+              </div>
+            </dl>
+            <h2>Description</h2>
+            <p class="description">{{ saved.description || '-' }}</p>
+          </div>
+        </div>
+      }
+    }
+  }
+</section>

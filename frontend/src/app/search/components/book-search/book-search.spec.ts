@@ -1,8 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { BookSearch } from './book-search';
-import { Book } from '../core/book.service';
+import { Book } from '../../services/book.service';
 
 describe('Book search', () => {
   let fixture: ComponentFixture<BookSearch>;
@@ -26,7 +27,7 @@ describe('Book search', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [BookSearch],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(BookSearch);
@@ -51,6 +52,11 @@ describe('Book search', () => {
   }
 
   it('does not submit empty or whitespace searches', () => {
+    expect(element.querySelector('h1')?.textContent).toBe('Search book to add');
+    expect(element.textContent).not.toContain('Hold a library');
+    expect(element.textContent).not.toContain('In your pocket');
+    expect(element.querySelector('.manual-button')?.getAttribute('href')).toBe('/add-book');
+    expect(element.querySelector('.manual-button')?.textContent).toBe('Add Manually');
     search('   ');
     http.expectNone((r) => r.url === '/api/books');
     expect(element.querySelector<HTMLButtonElement>('[type="submit"]')!.disabled).toBe(true);

@@ -1,0 +1,272 @@
+<section aria-labelledby="library-title">
+  <header class="library-header">
+    <div>
+      <h1 id="library-title">Your library</h1>
+      <p>Your books, all in one place.</p>
+    </div>
+    <a class="add-book" routerLink="/search">Add a book</a>
+  </header>
+
+  @switch (state()) {
+    @case ('loading') {
+      <p class="message" role="status">Loading your library…</p>
+    }
+    @case ('error') {
+      <div class="message" role="alert">
+        <h2>Could not load your library</h2>
+        <p>Please try again in a moment.</p>
+        <button type="button" (click)="loadBooks()">Try again</button>
+      </div>
+    }
+    @case ('ready') {
+      @if (books().length) {
+        <section class="filters" aria-label="Library filters">
+          <div class="filter-controls">
+            <div class="filter-field">
+              <label for="genre-filter">Genre</label>
+              <select
+                id="genre-filter"
+                [ngModel]="genreFilter()"
+                (ngModelChange)="changeGenre($event)"
+              >
+                <option [ngValue]="null">All genres</option>
+                <option value="">No genre</option>
+                @for (option of genreOptions(); track option.value) {
+                  <option [ngValue]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="read-filter">Read status</label>
+              <select
+                id="read-filter"
+                [ngModel]="readFilter()"
+                (ngModelChange)="changeReadStatus($event)"
+              >
+                <option value="all">All books</option>
+                <option value="read">Read</option>
+                <option value="unread">Unread</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="shelf-filter">Shelf</label>
+              <select
+                id="shelf-filter"
+                [ngModel]="shelfFilter()"
+                (ngModelChange)="changeShelf($event)"
+              >
+                <option [ngValue]="null">All shelves</option>
+                <option value="">No shelf</option>
+                @for (option of shelfOptions(); track option.value) {
+                  <option [ngValue]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <button
+              class="clear-filters"
+              type="button"
+              (click)="clearFilters()"
+              [disabled]="!hasFilters()"
+            >
+              Clear filters
+            </button>
+          </div>
+        </section>
+        <div class="table-container" role="region" aria-label="Library books" tabindex="0">
+          <table>
+            <caption class="visually-hidden">
+              Books in your library. Select Title, Author, Rating, or Shelf location to sort.
+            </caption>
+            <thead>
+              <tr>
+                <th class="edit-cell" scope="col">
+                  <span class="visually-hidden">Edit book</span>
+                </th>
+                <th scope="col" [attr.aria-sort]="sortField() === 'title' ? sortDirection() : null">
+                  <button class="sort-button" type="button" (click)="sortBy('title')">
+                    <span class="header-label">Title</span>
+                    @if (sortField() === 'title') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'author' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('author')">
+                    <span class="header-label">Author</span>
+                    @if (sortField() === 'author') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+                <th scope="col">Genres</th>
+                <th scope="col">Read status</th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'rating' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('rating')">
+                    <span class="header-label">Rating</span>
+                    @if (sortField() === 'rating') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'shelfLocation' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('shelfLocation')">
+                    <span class="header-label">Shelf location</span>
+                    @if (sortField() === 'shelfLocation') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (book of pagedBooks(); track book.id) {
+                <tr (click)="openBook(book.id)">
+                  <td class="edit-cell">
+                    <a
+                      class="row-edit"
+                      [routerLink]="['/library/books', book.id, 'edit']"
+                      (click)="$event.stopPropagation()"
+                      [attr.aria-label]="'Edit ' + book.title"
+                      title="Edit book"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" />
+                        <path d="m14 5 5 5" />
+                      </svg>
+                    </a>
+                  </td>
+                  <th scope="row">
+                    <a
+                      [routerLink]="['/library/books', book.id]"
+                      (click)="$event.stopPropagation()"
+                      >{{ book.title || '-' }}</a
+                    >
+                  </th>
+                  <td>{{ book.author || '-' }}</td>
+                  <td>
+                    @if (book.genres.length) {
+                      <ul class="genre-tags" aria-label="Genres">
+                        @for (genre of book.genres; track genre) {
+                          <li>{{ genre }}</li>
+                        }
+                      </ul>
+                    } @else {
+                      -
+                    }
+                  </td>
+                  <td>
+                    <span class="read-status" [class.read]="book.isRead">{{
+                      book.isRead ? 'Read' : 'Unread'
+                    }}</span>
+                  </td>
+                  <td>
+                    @if (book.isRead && book.rating !== null) {
+                      {{ book.rating }}
+                    } @else {
+                      <span class="muted">-</span>
+                    }
+                  </td>
+                  <td>{{ book.shelfLocation || '-' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (sortedBooks().length) {
+          <nav class="pagination" aria-label="Library pagination">
+            <div class="page-size">
+              <label for="books-per-page">Books per page</label>
+              <select
+                id="books-per-page"
+                [ngModel]="pageSize()"
+                (ngModelChange)="changePageSize($event)"
+              >
+                <option [ngValue]="10">10</option>
+                <option [ngValue]="25">25</option>
+                <option [ngValue]="50">50</option>
+              </select>
+            </div>
+            <span class="page-range" role="status"
+              >{{ pageStart() + 1 }}–{{ pageEnd() }} of {{ sortedBooks().length }}</span
+            >
+            <div class="page-navigation">
+              <button
+                type="button"
+                aria-label="First page"
+                (click)="goToPage(0)"
+                [disabled]="pageIndex() === 0"
+              >
+                «
+              </button>
+              <button
+                type="button"
+                aria-label="Previous page"
+                (click)="goToPage(pageIndex() - 1)"
+                [disabled]="pageIndex() === 0"
+              >
+                ‹
+              </button>
+              <span>Page {{ pageIndex() + 1 }} of {{ pageCount() }}</span>
+              <button
+                type="button"
+                aria-label="Next page"
+                (click)="goToPage(pageIndex() + 1)"
+                [disabled]="pageIndex() + 1 >= pageCount()"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                aria-label="Last page"
+                (click)="goToPage(pageCount() - 1)"
+                [disabled]="pageIndex() + 1 >= pageCount()"
+              >
+                »
+              </button>
+            </div>
+          </nav>
+        }
+        @if (!sortedBooks().length) {
+          <div class="message" role="status">
+            <h2>No books match your filters</h2>
+            <p>Try different options or clear the filters to see all your books.</p>
+          </div>
+        }
+      } @else {
+        <div class="message" role="status">
+          <h2>Your library is empty</h2>
+          <p>Add your first book to start your collection.</p>
+          <a routerLink="/search">Search for a book</a>
+        </div>
+      }
+    }
+  }
+</section>

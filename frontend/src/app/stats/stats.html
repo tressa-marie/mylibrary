@@ -1,0 +1,133 @@
+<header class="page-header">
+  <h1>Stats</h1>
+  <p>A closer look at your library.</p>
+</header>
+
+@if (state() === 'loading') {
+  <p class="message" role="status">Loading your stats…</p>
+} @else if (state() === 'error') {
+  <div class="message" role="alert">
+    <p>Your stats could not be loaded. Please try again.</p>
+    <button type="button" (click)="loadBooks()">Try again</button>
+  </div>
+} @else {
+  <section class="chart-card" aria-labelledby="reading-heading">
+    <h2 id="reading-heading">Read and unread books</h2>
+    <p id="reading-description">Your reading progress across all books in your library.</p>
+    @if (libraryTotal()) {
+      <div class="chart-layout">
+        <div class="chart-container">
+          <canvas
+            #readingChart
+            role="img"
+            aria-label="Pie chart of read and unread books"
+            aria-describedby="reading-description reading-table"
+          ></canvas>
+        </div>
+        <table id="reading-table">
+          <caption>
+            {{
+              libraryTotal()
+            }}
+            {{
+              libraryTotal() === 1 ? 'book' : 'books'
+            }}
+            in your library
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Read status</th>
+              <th scope="col">Books</th>
+              <th scope="col">Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (status of readingStatuses(); track status.value) {
+              <tr>
+                <th scope="row">
+                  <span
+                    class="swatch"
+                    [style.background-color]="status.color"
+                    aria-hidden="true"
+                  ></span
+                  >{{ status.label }}
+                </th>
+                <td>{{ status.count }}</td>
+                <td>{{ status.percentage | number: '1.0-1' }}%</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="message">
+        <p>Add your first book to see your reading progress.</p>
+        <a routerLink="/search">Find a book</a>
+      </div>
+    }
+  </section>
+  <section class="chart-card" aria-labelledby="gender-heading">
+    <h2 id="gender-heading">Author genders</h2>
+    <p id="gender-description">
+      Books in your library by recorded author gender. Each book counts once; authors with multiple
+      books count once per book. Only recorded choices are included; blank values are excluded.
+      Unknown counts only when explicitly selected.
+    </p>
+    @if (total()) {
+      <div class="chart-layout">
+        <div class="chart-container">
+          <canvas
+            #genderChart
+            role="img"
+            aria-label="Pie chart of books by author gender"
+            aria-describedby="gender-description gender-table"
+          ></canvas>
+        </div>
+        <table id="gender-table">
+          <caption>
+            {{
+              total()
+            }}
+            {{
+              total() === 1 ? 'book' : 'books'
+            }}
+            included in this chart
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Gender</th>
+              <th scope="col">Books</th>
+              <th scope="col">Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (gender of genders(); track gender.value) {
+              <tr>
+                <th scope="row">
+                  <span
+                    class="swatch"
+                    [style.background-color]="gender.color"
+                    aria-hidden="true"
+                  ></span
+                  >{{ gender.label }}
+                </th>
+                <td>{{ gender.count }}</td>
+                <td>{{ gender.percentage | number: '1.0-1' }}%</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (libraryTotal()) {
+      <div class="message">
+        <p>No author genders have been recorded for this chart yet.</p>
+        <a routerLink="/">Edit books in your library</a>
+      </div>
+    } @else {
+      <div class="message">
+        <p>Add your first book to see your author gender breakdown.</p>
+        <a routerLink="/search">Find a book</a>
+      </div>
+    }
+  </section>
+}

@@ -1,0 +1,48 @@
+:host {
+  display: block;
+  padding: clamp(2rem, 8vw, 5rem) 0;
+}
+.coming-soon {
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  text-align: center;
+}
+.eyebrow {
+  margin: 0 0 1rem;
+  color: #625f57;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+h1 {
+  margin: 0;
+  font:
+    500 clamp(2rem, 5vw, 3rem)/1.15 'Playfair Display',
+    Georgia,
+    serif;
+  overflow-wrap: anywhere;
+}
+.helper-text {
+  max-width: 30rem;
+  margin: 1.25rem auto 2rem;
+  color: #625f57;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+a {
+  display: inline-block;
+  padding: 0.8rem 1.2rem;
+  border-radius: 0.5rem;
+  background: #254d3c;
+  color: #fffdf8;
+  font-weight: 600;
+  text-decoration: none;
+}
+a:hover {
+  background: #193829;
+}

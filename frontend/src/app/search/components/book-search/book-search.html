@@ -1,25 +1,33 @@
 <section aria-labelledby="search-title">
-  <div class="page-title">
-    <h1 class="header" id="top-text">Hold a library</h1>
-    <h1 class="header" id="bottom-text">In your pocket</h1>
-  </div>
-  <form (ngSubmit)="search()">
-    <div class="search-form">
-      <div class="term">
-        <input
-          id="search-query"
-          name="query"
-          type="search"
-          [(ngModel)]="query"
-          maxlength="200"
-          required
-          placeholder="Title, author, or ISBN"
-        />
-      </div>
-      <button type="submit" [disabled]="!query.trim()">Search</button>
+  <div class="add-options">
+    <div class="search-option">
+      <h1 id="search-title">Search book to add</h1>
+      <form (ngSubmit)="search()">
+        <div class="search-form">
+          <div class="term">
+            <input
+              id="search-query"
+              name="query"
+              type="search"
+              [(ngModel)]="query"
+              maxlength="200"
+              required
+              placeholder="Title, author, or ISBN"
+              aria-label="Title, author, or ISBN"
+            />
+          </div>
+          <button type="submit" [disabled]="!query.trim()">Search</button>
+        </div>
+        <div class="helper-text">
+          Search powered by Google Books. Try "<em>Harry Potter</em>" or "<em>Olivie Blake</em>"
+        </div>
+      </form>
     </div>
-    <div class="helper-text">Search powered by Google Books. Try "<em>Harry Potter</em>" or "<em>Olivie Blake</em>"</div>
-  </form>
+    <div class="option-divider" aria-hidden="true"><span>or</span></div>
+    <div class="manual-option">
+      <a class="manual-button" routerLink="/add-book">Add Manually</a>
+    </div>
+  </div>
   <div role="status" aria-live="polite">
     @switch (state()) {
       @case ('loading') {
@@ -66,6 +74,9 @@
             <p>{{ book.publisher }}</p>
           }
           <p>ISBN: {{ book.isbns.join(', ') || 'Unavailable' }}</p>
+          <button id="add-to-library-btn" type="button" (click)="addToLibrary(book)">
+            Add to my library
+          </button>
         </div>
       </li>
     }

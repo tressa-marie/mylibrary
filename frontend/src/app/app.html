@@ -10,15 +10,37 @@
       routerLinkActive="active"
       [routerLinkActiveOptions]="{ exact: true }"
       ariaCurrentWhenActive="page"
-      >Home</a
+      >Library</a
     >
-    <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">Search books</a>
+    <a routerLink="/stats" routerLinkActive="active" ariaCurrentWhenActive="page">Stats</a>
+    <a routerLink="/coming-soon">Goals</a>
+    <a routerLink="/coming-soon">Explore</a>
   </nav>
-  <div id="profile-img">
-    <img src="assets/puck.png" alt="Profile picture" />
+  <div class="profile-summary">
+    <span class="book-count" role="status" title="Total books in your library"
+      >{{ totalBooks() ?? '-' }} {{ totalBooks() === 1 ? 'book' : 'books' }}</span
+    >
+    <button
+      id="profile-img"
+      type="button"
+      [matMenuTriggerFor]="profileMenu"
+      aria-label="Open profile menu"
+    >
+      <img src="assets/puck.png" alt="Profile picture" />
+    </button>
+    <mat-menu #profileMenu="matMenu" xPosition="before">
+      <a mat-menu-item routerLink="/shelves">Manage Shelves</a>
+    </mat-menu>
   </div>
 </header>
 <main id="main-content" tabindex="-1">
   <router-outlet />
 </main>
 <footer>My Library - Make room for your next chapter.</footer>
+<a
+  class="floating-btn floating-btn--fixed"
+  routerLink="/search"
+  aria-label="Add book"
+  title="Add book"
+  ><span aria-hidden="true">+</span></a
+>

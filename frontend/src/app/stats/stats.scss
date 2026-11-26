@@ -1,0 +1,112 @@
+:host {
+  display: block;
+}
+.page-header {
+  padding: 3rem 0 2rem;
+}
+h1 {
+  margin: 0 0 0.75rem;
+  font:
+    500 clamp(2rem, 5vw, 3rem)/1.15 'Playfair Display',
+    Georgia,
+    serif;
+}
+h2 {
+  margin: 0 0 0.75rem;
+  font:
+    500 1.5rem 'Playfair Display',
+    Georgia,
+    serif;
+}
+p {
+  color: #625f57;
+  line-height: 1.6;
+}
+.page-header p {
+  margin: 0;
+}
+.chart-card,
+.message {
+  padding: 2rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+}
+.chart-card > p {
+  max-width: 48rem;
+}
+.chart-card + .chart-card {
+  margin-top: 2rem;
+}
+.chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 3rem;
+  align-items: center;
+  margin-top: 2rem;
+}
+.chart-container {
+  position: relative;
+  height: 320px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+caption {
+  text-align: left;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+th,
+td {
+  padding: 0.9rem 0.5rem;
+  border-bottom: 1px solid #e8e3d9;
+}
+thead th {
+  font-size: 0.85rem;
+  color: #625f57;
+}
+td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+thead th:not(:first-child) {
+  text-align: right;
+}
+tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.swatch {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-right: 0.65rem;
+  border-radius: 50%;
+}
+button {
+  padding: 0.8rem 1.2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #254d3c;
+  color: #fffdf8;
+  font: inherit;
+  cursor: pointer;
+}
+a {
+  color: #254d3c;
+}
+@media (max-width: 650px) {
+  .chart-card {
+    padding: 1.25rem;
+  }
+  .chart-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+  .chart-container {
+    height: 260px;
+  }
+}
