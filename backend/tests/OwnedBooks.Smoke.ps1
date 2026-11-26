@@ -94,6 +94,15 @@ try {
     Assert-True ($books.Count -eq 2) 'Invalid requests must not insert records.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
     Assert-True ($library.Count -eq 2) 'Both routes must expose the same library.'
+    $expectedFields = @('id', 'title', 'author', 'genres', 'isRead', 'rating', 'shelfId', 'shelfLocation') | Sort-Object
+    foreach ($summary in $library) {
+        $fields = $summary.PSObject.Properties.Name | Sort-Object
+        Assert-True (($fields -join ',') -eq ($expectedFields -join ',')) 'The list endpoint must return only table summary fields.'
+    }
+    $summary = $library | Where-Object { $_.id -eq $saved.id }
+    Assert-True ($summary.title -eq $saved.title -and $summary.author -eq $saved.author `
+        -and ($summary.genres -join '|') -eq ($saved.genres -join '|') `
+        -and $summary.shelfLocation -eq $saved.shelfLocation) 'List summaries must retain the table metadata.'
     $missingStatus = 0
     try { Invoke-WebRequest "$baseUrl/api/owned-books/$([guid]::NewGuid())" -UseBasicParsing | Out-Null }
     catch { $missingStatus = [int]$_.Exception.Response.StatusCode }

@@ -27,7 +27,7 @@
               <select
                 id="genre-filter"
                 [ngModel]="genreFilter()"
-                (ngModelChange)="genreFilter.set($event)"
+                (ngModelChange)="changeGenre($event)"
               >
                 <option [ngValue]="null">All genres</option>
                 <option value="">No genre</option>
@@ -41,7 +41,7 @@
               <select
                 id="read-filter"
                 [ngModel]="readFilter()"
-                (ngModelChange)="readFilter.set($event)"
+                (ngModelChange)="changeReadStatus($event)"
               >
                 <option value="all">All books</option>
                 <option value="read">Read</option>
@@ -53,7 +53,7 @@
               <select
                 id="shelf-filter"
                 [ngModel]="shelfFilter()"
-                (ngModelChange)="shelfFilter.set($event)"
+                (ngModelChange)="changeShelf($event)"
               >
                 <option [ngValue]="null">All shelves</option>
                 <option value="">No shelf</option>
@@ -136,7 +136,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (book of sortedBooks(); track book.id) {
+              @for (book of pagedBooks(); track book.id) {
                 <tr (click)="openBook(book.id)">
                   <td class="edit-cell">
                     <a
@@ -200,6 +200,60 @@
             </tbody>
           </table>
         </div>
+        @if (sortedBooks().length) {
+          <nav class="pagination" aria-label="Library pagination">
+            <div class="page-size">
+              <label for="books-per-page">Books per page</label>
+              <select
+                id="books-per-page"
+                [ngModel]="pageSize()"
+                (ngModelChange)="changePageSize($event)"
+              >
+                <option [ngValue]="10">10</option>
+                <option [ngValue]="25">25</option>
+                <option [ngValue]="50">50</option>
+              </select>
+            </div>
+            <span class="page-range" role="status"
+              >{{ pageStart() + 1 }}–{{ pageEnd() }} of {{ sortedBooks().length }}</span
+            >
+            <div class="page-navigation">
+              <button
+                type="button"
+                aria-label="First page"
+                (click)="goToPage(0)"
+                [disabled]="pageIndex() === 0"
+              >
+                «
+              </button>
+              <button
+                type="button"
+                aria-label="Previous page"
+                (click)="goToPage(pageIndex() - 1)"
+                [disabled]="pageIndex() === 0"
+              >
+                ‹
+              </button>
+              <span>Page {{ pageIndex() + 1 }} of {{ pageCount() }}</span>
+              <button
+                type="button"
+                aria-label="Next page"
+                (click)="goToPage(pageIndex() + 1)"
+                [disabled]="pageIndex() + 1 >= pageCount()"
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                aria-label="Last page"
+                (click)="goToPage(pageCount() - 1)"
+                [disabled]="pageIndex() + 1 >= pageCount()"
+              >
+                »
+              </button>
+            </div>
+          </nav>
+        }
         @if (!sortedBooks().length) {
           <div class="message" role="status">
             <h2>No books match your filters</h2>

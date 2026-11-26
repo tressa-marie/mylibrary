@@ -24,3 +24,8 @@ export interface SavedOwnedBook extends CreateOwnedBookRequest {
   editionId: string;
   createdAtUtc: string;
 }
+
+export type LibraryBookSummary = Pick<
+  SavedOwnedBook,
+  'id' | 'title' | 'author' | 'genres' | 'isRead' | 'rating' | 'shelfId' | 'shelfLocation'
+>;

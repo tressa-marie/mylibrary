@@ -73,6 +73,11 @@ public static class OwnedBookEndpoints
             return book is null ? Results.NotFound() : Results.Ok(book);
         });
         group.MapGet("", async (LibraryDbContext db, CancellationToken ct) =>
-            Results.Ok(await LibraryBooks(db).OrderBy(book => book.Id).ToArrayAsync(ct)));
+            Results.Ok(await db.OwnedBooks.AsNoTracking().OrderBy(book => book.Id)
+                .Select(book => new LibraryBookSummary(
+                    book.Id, book.EditionDetails.Book.Title, book.EditionDetails.Book.Author,
+                    book.EditionDetails.Book.Genres, book.IsRead, book.Rating,
+                    book.ShelfId, book.ShelfLocation))
+                .ToArrayAsync(ct)));
     }
 }

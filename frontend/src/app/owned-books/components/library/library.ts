@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { SavedOwnedBook } from '../../models/owned-book-api';
+import { LibraryBookSummary } from '../../models/owned-book-api';
 import { OwnedBookService } from '../../services/owned-book.service';
 
 type SortField = 'title' | 'author' | 'shelfLocation' | 'rating';
@@ -17,7 +17,9 @@ export class Library implements OnInit {
   private readonly service = inject(OwnedBookService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly books = signal<SavedOwnedBook[]>([]);
+  protected readonly books = signal<LibraryBookSummary[]>([]);
+  protected readonly pageSize = signal(25);
+  protected readonly pageIndex = signal(0);
   protected readonly genreFilter = signal<string | null>(null);
   protected readonly readFilter = signal<'all' | 'read' | 'unread'>('all');
   protected readonly shelfFilter = signal<string | null>(null);
@@ -49,12 +51,14 @@ export class Library implements OnInit {
   protected readonly sortedBooks = computed(() => {
     const field = this.sortField();
     const direction = this.sortDirection() === 'ascending' ? 1 : -1;
-    const value = (book: SavedOwnedBook): string | number | null =>
+    const value = (book: LibraryBookSummary): string | number | null =>
       field === 'rating'
         ? book.isRead
           ? (book.rating ?? null)
           : null
-        : book[field]?.trim() || null;
+        : (field === 'title'
+            ? book.title?.trim().replace(/^(?:a|an|the)\s+/i, '')
+            : book[field]?.trim()) || null;
     return [...this.filteredBooks()].sort((a, b) => {
       const left = value(a);
       const right = value(b);
@@ -68,6 +72,16 @@ export class Library implements OnInit {
       return comparison * direction;
     });
   });
+  protected readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.sortedBooks().length / this.pageSize())),
+  );
+  protected readonly pageStart = computed(() => this.pageIndex() * this.pageSize());
+  protected readonly pageEnd = computed(() =>
+    Math.min(this.pageStart() + this.pageSize(), this.sortedBooks().length),
+  );
+  protected readonly pagedBooks = computed(() =>
+    this.sortedBooks().slice(this.pageStart(), this.pageEnd()),
+  );
   protected readonly state = signal<'loading' | 'ready' | 'error'>('loading');
 
   ngOnInit() {
@@ -91,9 +105,35 @@ export class Library implements OnInit {
   }
 
   protected clearFilters() {
+    this.pageIndex.set(0);
     this.genreFilter.set(null);
     this.readFilter.set('all');
     this.shelfFilter.set(null);
+  }
+
+  protected changeGenre(value: string | null) {
+    this.genreFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected changeReadStatus(value: 'all' | 'read' | 'unread') {
+    this.readFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected changeShelf(value: string | null) {
+    this.shelfFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  protected changePageSize(size: number) {
+    if (![10, 25, 50].includes(size)) return;
+    this.pageSize.set(size);
+    this.pageIndex.set(0);
+  }
+
+  protected goToPage(index: number) {
+    this.pageIndex.set(Math.max(0, Math.min(index, this.pageCount() - 1)));
   }
 
   protected openBook(id: string) {
@@ -101,6 +141,7 @@ export class Library implements OnInit {
   }
 
   protected sortBy(field: SortField) {
+    this.pageIndex.set(0);
     if (this.sortField() === field) {
       this.sortDirection.update((direction) =>
         direction === 'ascending' ? 'descending' : 'ascending',
@@ -118,6 +159,7 @@ export class Library implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (books) => {
+          this.pageIndex.set(0);
           this.books.set(books.map((book) => ({ ...book, genres: book.genres ?? [] })));
           this.state.set('ready');
         },

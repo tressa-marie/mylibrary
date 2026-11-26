@@ -38,6 +38,112 @@ describe('Library', () => {
     );
   }
 
+  const pageBooks = Array.from({ length: 56 }, (_, index) => ({
+    id: `book-${index + 1}`,
+    title: `Book ${String(index + 1).padStart(3, '0')}`,
+    author: 'Author',
+    genres: [index % 2 ? 'Mystery' : 'Fantasy'],
+    isRead: index % 3 === 0,
+    rating: null,
+    shelfId: null,
+    shelfLocation: index % 2 ? 'Study' : 'Living room',
+  }));
+
+  async function navigatePage(label: string) {
+    element.querySelector<HTMLButtonElement>(`.pagination button[aria-label="${label}"]`)!.click();
+    await fixture.whenStable();
+  }
+
+  async function setPageSize(size: number) {
+    const select = element.querySelector<HTMLSelectElement>('#books-per-page')!;
+    select.selectedIndex = Array.from(select.options).findIndex(
+      (option) => option.textContent?.trim() === String(size),
+    );
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+  }
+
+  it('defaults to 25 rows and handles first, previous, next, and last pages without more requests', async () => {
+    http.expectOne('/api/library/books').flush(pageBooks);
+    await fixture.whenStable();
+    expect(rowIds().length).toBe(25);
+    expect(rowIds()[0]).toBe('book-1');
+    expect(element.querySelector('.page-range')?.textContent).toBe('1–25 of 56');
+    expect(element.querySelector<HTMLButtonElement>('[aria-label="Previous page"]')!.disabled).toBe(
+      true,
+    );
+    await navigatePage('Next page');
+    expect(rowIds()[0]).toBe('book-26');
+    expect(element.querySelector('.page-range')?.textContent).toBe('26–50 of 56');
+    await navigatePage('Last page');
+    expect(rowIds()).toEqual(['book-51', 'book-52', 'book-53', 'book-54', 'book-55', 'book-56']);
+    expect(element.querySelector<HTMLButtonElement>('[aria-label="Next page"]')!.disabled).toBe(
+      true,
+    );
+    await navigatePage('Previous page');
+    expect(rowIds()[0]).toBe('book-26');
+    await navigatePage('First page');
+    expect(rowIds()[0]).toBe('book-1');
+    http.expectNone('/api/library/books');
+  });
+
+  it('resets the page on page-size and filter changes, and sorts the full filtered set', async () => {
+    http.expectOne('/api/library/books').flush(pageBooks);
+    await fixture.whenStable();
+    await setPageSize(50);
+    expect(rowIds().length).toBe(50);
+    await navigatePage('Last page');
+    await setPageSize(10);
+    expect(rowIds()).toEqual(pageBooks.slice(0, 10).map((book) => book.id));
+    await navigatePage('Next page');
+    await chooseFilter('genre-filter', 'Mystery');
+    expect(rowIds()[0]).toBe('book-2');
+    expect(element.querySelector('.page-range')?.textContent).toBe('1–10 of 28');
+    await navigatePage('Next page');
+    await chooseFilter('read-filter', 'Read');
+    expect(element.querySelector('.page-range')?.textContent).toBe('1–9 of 9');
+    clickHeader('Title');
+    expect(rowIds()[0]).toBe('book-52');
+    element.querySelector<HTMLButtonElement>('.clear-filters')!.click();
+    await fixture.whenStable();
+    expect(rowIds()[0]).toBe('book-56');
+    expect(rowIds().length).toBe(10);
+    expect(element.querySelector('.page-range')?.textContent).toBe('1–10 of 56');
+  });
+
+  it('paginates a 500-book library after numeric sorting across the entire collection', async () => {
+    const books = Array.from({ length: 500 }, (_, index) => ({
+      id: `book-${index}`,
+      title: `Book ${index}`,
+      author: 'Author',
+      genres: [],
+      isRead: true,
+      rating: index % 6,
+      shelfLocation: null,
+    }));
+    http.expectOne('/api/library/books').flush(books);
+    await fixture.whenStable();
+    await setPageSize(50);
+    await navigatePage('Next page');
+    clickHeader('Rating');
+    expect(rowIds().length).toBe(50);
+    expect(element.querySelector('.page-range')?.textContent).toBe('1–50 of 500');
+    expect(
+      Array.from(element.querySelectorAll('tbody tr'), (row) =>
+        row.querySelectorAll('td:not(.edit-cell)')[3].textContent?.trim(),
+      ),
+    ).toEqual(Array(50).fill('0'));
+    clickHeader('Rating');
+    expect(
+      Array.from(element.querySelectorAll('tbody tr'), (row) =>
+        row.querySelectorAll('td:not(.edit-cell)')[3].textContent?.trim(),
+      ),
+    ).toEqual(Array(50).fill('5'));
+    await navigatePage('Last page');
+    expect(element.querySelector('.page-range')?.textContent).toBe('451–500 of 500');
+    expect(rowIds().length).toBe(50);
+  });
+
   const filterBooks = [
     { id: 'zulu', title: 'Zulu', genres: ['Fantasy'], isRead: true, shelfLocation: 'Living room' },
     {
@@ -152,6 +258,26 @@ describe('Library', () => {
     });
   }
 
+  it('ignores leading A, An, and The when sorting titles in either direction', () => {
+    http.expectOne('/api/library/books').flush([
+      { id: 'window', title: 'A Window' },
+      { id: 'zebra', title: 'Zebra' },
+      { id: 'apple', title: 'Apple' },
+      { id: 'ocean', title: 'an Ocean' },
+      { id: 'animal', title: 'Animal Farm' },
+      { id: 'the', title: 'The Hobbit' },
+      { id: 'bridge', title: 'a Bridge' },
+    ]);
+    fixture.detectChanges();
+    const ascending = ['animal', 'apple', 'bridge', 'the', 'ocean', 'window', 'zebra'];
+    expect(rowIds()).toEqual(ascending);
+    expect(element.querySelector('a[href="/library/books/window"]')?.textContent?.trim()).toBe(
+      'A Window',
+    );
+    clickHeader('Title');
+    expect(rowIds()).toEqual([...ascending].reverse());
+  });
+
   it('sorts ratings numerically, including zero and decimals, with missing ratings last', () => {
     http.expectOne('/api/library/books').flush([
       { id: 'high', title: 'High', isRead: true, rating: 4.5 },
@@ -215,14 +341,14 @@ describe('Library', () => {
     ).toEqual(['Title', 'Author', 'Genres', 'Read status', 'Rating', 'Shelf location']);
     const rows = element.querySelectorAll('tbody tr');
     expect(rows.length).toBe(3);
-    expect(rows[0].textContent).toContain('A Wizard of Earthsea');
-    expect(rows[0].textContent).toContain('Ursula K. Le Guin');
-    expect(rows[0].textContent).toContain('Fantasy');
-    expect(rows[0].textContent).toContain('Read');
-    expect(rows[0].querySelectorAll('td:not(.edit-cell)')[3].textContent?.trim()).toBe('0');
-    expect(rows[0].textContent).toContain('Living room, shelf 2');
+    expect(rows[1].textContent).toContain('A Wizard of Earthsea');
+    expect(rows[1].textContent).toContain('Ursula K. Le Guin');
+    expect(rows[1].textContent).toContain('Fantasy');
+    expect(rows[1].textContent).toContain('Read');
+    expect(rows[1].querySelectorAll('td:not(.edit-cell)')[3].textContent?.trim()).toBe('0');
+    expect(rows[1].textContent).toContain('Living room, shelf 2');
     expect(
-      Array.from(rows[1].querySelectorAll('td:not(.edit-cell)'), (td) => td.textContent?.trim()),
+      Array.from(rows[0].querySelectorAll('td:not(.edit-cell)'), (td) => td.textContent?.trim()),
     ).toEqual(['-', '-', 'Read', '-', '-']);
     expect(
       Array.from(rows[2].querySelectorAll('td:not(.edit-cell)'), (td) => td.textContent?.trim()),

@@ -190,8 +190,11 @@ dotnet ef database update --project backend/MyLibrary.Api
   below. It returns `201 Created`, the saved record (including `id`, `editionId`,
   and `createdAtUtc`), and a `Location` header. Each request creates a new owned
   copy, edition, and book in one transaction; duplicates are allowed.
-- `GET /api/library/books` returns an array of saved records, or `[]` for an empty
-  library. It reads persisted metadata without calling Google Books.
+- `GET /api/library/books` returns an array of lightweight table summaries, or
+  `[]` for an empty library. Each summary contains `id`, `title`, `author`,
+  `genres`, `isRead`, `rating`, `shelfId`, and `shelfLocation`. The database query
+  selects only these fields; descriptions and other detail fields are retrieved
+  separately by ID. No Google Books request is made.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.
 - `PUT /api/library/books/{id}` replaces the editable fields of an existing
   record using the same JSON shape and validation as POST. It returns `200` with
@@ -202,6 +205,12 @@ dotnet ef database update --project backend/MyLibrary.Api
   can assign, move, or unassign a book; it must reference an existing shelf or
   be null. Work, edition, and ownership updates save together in one transaction.
 - `/api/owned-books` supports the same operations for the existing frontend.
+
+Library pagination runs in the frontend after filtering and sorting the full
+summary array. The default page size is 25, with 10/25/50 choices and first,
+previous, next, and last controls. Changing filters, sorting, or page size
+returns to page 1. Page changes do not make additional API requests. The header
+book count remains the total library size, regardless of filters or page.
 
 Example, with the API running:
 

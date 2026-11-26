@@ -48,22 +48,11 @@ button:hover {
   overflow-x: auto;
 }
 .filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
   padding: 0.75rem 1rem;
   margin-bottom: 0.25rem;
 }
-.filters h2 {
-  margin: 0;
-  font:
-    500 1.35rem Georgia,
-    serif;
-}
 .filter-controls {
   display: flex;
-  flex: 1 1 32rem;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
@@ -243,6 +232,50 @@ tbody tr:focus-within > * {
   padding: 0;
   overflow: hidden;
   clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+}
+.page-size,
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.page-size {
+  margin-right: auto;
+}
+.page-size select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #8b9288;
+  border-radius: 0.4rem;
+  background: #fffdf8;
+  color: inherit;
+  font: inherit;
+}
+.page-navigation button {
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  color: #254d3c;
+  font-size: 1.25rem;
+}
+.page-navigation button:hover:enabled {
+  background: #eae5da;
+}
+.page-navigation button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.page-range,
+.page-navigation span {
   white-space: nowrap;
 }
 @media (max-width: 600px) {

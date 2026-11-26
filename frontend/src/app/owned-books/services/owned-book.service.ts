@@ -1,6 +1,10 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { CreateOwnedBookRequest, SavedOwnedBook } from '../models/owned-book-api';
+import {
+  CreateOwnedBookRequest,
+  LibraryBookSummary,
+  SavedOwnedBook,
+} from '../models/owned-book-api';
 import { tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -11,7 +15,7 @@ export class OwnedBookService {
 
   list() {
     return this.http
-      .get<SavedOwnedBook[]>('/api/library/books')
+      .get<LibraryBookSummary[]>('/api/library/books')
       .pipe(tap((books) => this.bookCount.set(books.length)));
   }
 
