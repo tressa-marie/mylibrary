@@ -79,6 +79,9 @@
             </caption>
             <thead>
               <tr>
+                <th class="edit-cell" scope="col">
+                  <span class="visually-hidden">Edit book</span>
+                </th>
                 <th scope="col" [attr.aria-sort]="sortField() === 'title' ? sortDirection() : null">
                   <button class="sort-button" type="button" (click)="sortBy('title')">
                     <span class="header-label">Title</span>
@@ -102,7 +105,7 @@
                     }
                   </button>
                 </th>
-                <th scope="col">Genre</th>
+                <th scope="col">Genres</th>
                 <th scope="col">Read status</th>
                 <th
                   scope="col"
@@ -135,6 +138,31 @@
             <tbody>
               @for (book of sortedBooks(); track book.id) {
                 <tr (click)="openBook(book.id)">
+                  <td class="edit-cell">
+                    <a
+                      class="row-edit"
+                      [routerLink]="['/library/books', book.id, 'edit']"
+                      (click)="$event.stopPropagation()"
+                      [attr.aria-label]="'Edit ' + book.title"
+                      title="Edit book"
+                    >
+                      <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                        focusable="false"
+                      >
+                        <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" />
+                        <path d="m14 5 5 5" />
+                      </svg>
+                    </a>
+                  </td>
                   <th scope="row">
                     <a
                       [routerLink]="['/library/books', book.id]"
@@ -143,7 +171,17 @@
                     >
                   </th>
                   <td>{{ book.author || '-' }}</td>
-                  <td>{{ book.genre || '-' }}</td>
+                  <td>
+                    @if (book.genres.length) {
+                      <ul class="genre-tags" aria-label="Genres">
+                        @for (genre of book.genres; track genre) {
+                          <li>{{ genre }}</li>
+                        }
+                      </ul>
+                    } @else {
+                      -
+                    }
+                  </td>
                   <td>
                     <span class="read-status" [class.read]="book.isRead">{{
                       book.isRead ? 'Read' : 'Unread'

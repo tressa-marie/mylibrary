@@ -39,11 +39,17 @@ describe('Library', () => {
   }
 
   const filterBooks = [
-    { id: 'zulu', title: 'Zulu', genre: 'Fantasy', isRead: true, shelfLocation: 'Living room' },
-    { id: 'alpha', title: 'Alpha', genre: 'fantasy', isRead: false, shelfLocation: 'Study' },
-    { id: 'beta', title: 'Beta', genre: 'Mystery', isRead: true, shelfLocation: 'Study' },
-    { id: 'gamma', title: 'Gamma', genre: null, isRead: false, shelfLocation: null },
-    { id: 'delta', title: 'Delta', genre: 'Fantasy', isRead: true, shelfLocation: 'Study' },
+    { id: 'zulu', title: 'Zulu', genres: ['Fantasy'], isRead: true, shelfLocation: 'Living room' },
+    {
+      id: 'alpha',
+      title: 'Alpha',
+      genres: ['fantasy', 'Adventure'],
+      isRead: false,
+      shelfLocation: 'Study',
+    },
+    { id: 'beta', title: 'Beta', genres: ['Mystery'], isRead: true, shelfLocation: 'Study' },
+    { id: 'gamma', title: 'Gamma', genres: [], isRead: false, shelfLocation: null },
+    { id: 'delta', title: 'Delta', genres: ['Fantasy'], isRead: true, shelfLocation: 'Study' },
   ];
 
   async function chooseFilter(id: string, label: string) {
@@ -62,7 +68,15 @@ describe('Library', () => {
       Array.from(element.querySelector<HTMLSelectElement>(`#${id}`)!.options, (option) =>
         option.textContent?.trim(),
       );
-    expect(options('genre-filter')).toEqual(['All genres', 'No genre', 'Fantasy', 'Mystery']);
+    expect(options('genre-filter')).toEqual([
+      'All genres',
+      'No genre',
+      'Adventure',
+      'Fantasy',
+      'Mystery',
+    ]);
+    await chooseFilter('genre-filter', 'Adventure');
+    expect(rowIds()).toEqual(['alpha']);
     expect(options('shelf-filter')).toEqual(['All shelves', 'No shelf', 'Living room', 'Study']);
     await chooseFilter('genre-filter', 'Fantasy');
     expect(rowIds()).toEqual(['alpha', 'delta', 'zulu']);
@@ -169,7 +183,7 @@ describe('Library', () => {
         id: '2',
         title: 'Zebra',
         author: 'Second Author',
-        genre: null,
+        genres: [],
         isRead: false,
         rating: 4,
         shelfLocation: null,
@@ -178,7 +192,7 @@ describe('Library', () => {
         id: '1',
         title: 'A Wizard of Earthsea',
         author: 'Ursula K. Le Guin',
-        genre: 'Fantasy',
+        genres: ['Fantasy'],
         isRead: true,
         rating: 0,
         shelfLocation: 'Living room, shelf 2',
@@ -187,7 +201,7 @@ describe('Library', () => {
         id: '3',
         title: 'Unrated',
         author: '',
-        genre: '',
+        genres: [],
         isRead: true,
         rating: null,
         shelfLocation: '',
@@ -195,32 +209,24 @@ describe('Library', () => {
     ]);
     fixture.detectChanges();
     expect(
-      Array.from(element.querySelectorAll('thead th'), (th) =>
+      Array.from(element.querySelectorAll('thead th:not(.edit-cell)'), (th) =>
         (th.querySelector('.header-label') ?? th).textContent?.trim(),
       ),
-    ).toEqual(['Title', 'Author', 'Genre', 'Read status', 'Rating', 'Shelf location']);
+    ).toEqual(['Title', 'Author', 'Genres', 'Read status', 'Rating', 'Shelf location']);
     const rows = element.querySelectorAll('tbody tr');
     expect(rows.length).toBe(3);
     expect(rows[0].textContent).toContain('A Wizard of Earthsea');
     expect(rows[0].textContent).toContain('Ursula K. Le Guin');
     expect(rows[0].textContent).toContain('Fantasy');
     expect(rows[0].textContent).toContain('Read');
-    expect(rows[0].querySelectorAll('td')[3].textContent?.trim()).toBe('0');
+    expect(rows[0].querySelectorAll('td:not(.edit-cell)')[3].textContent?.trim()).toBe('0');
     expect(rows[0].textContent).toContain('Living room, shelf 2');
-    expect(Array.from(rows[1].querySelectorAll('td'), (td) => td.textContent?.trim())).toEqual([
-      '-',
-      '-',
-      'Read',
-      '-',
-      '-',
-    ]);
-    expect(Array.from(rows[2].querySelectorAll('td'), (td) => td.textContent?.trim())).toEqual([
-      'Second Author',
-      '-',
-      'Unread',
-      '-',
-      '-',
-    ]);
+    expect(
+      Array.from(rows[1].querySelectorAll('td:not(.edit-cell)'), (td) => td.textContent?.trim()),
+    ).toEqual(['-', '-', 'Read', '-', '-']);
+    expect(
+      Array.from(rows[2].querySelectorAll('td:not(.edit-cell)'), (td) => td.textContent?.trim()),
+    ).toEqual(['Second Author', '-', 'Unread', '-', '-']);
   });
 
   it('shows an empty state with ways to add books', () => {

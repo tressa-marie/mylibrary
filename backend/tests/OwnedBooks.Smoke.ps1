@@ -57,7 +57,7 @@ try {
         coverUrl = '/api/books/ADbRywEACAAJ/cover'; format = 'Paperback'; authorGender = 'other'
         isRead = $false; rating = 4; purchaseLocation = ' Local store '; publicationYear = 2020
         publisher = 'Vintage'; edition = 'First'; pageCount = 498
-        genre = ' Fantasy '; shelfLocation = ' Living room, shelf 2 '
+        genres = @(' Fantasy ', 'Adventure', 'fantasy', '  '); shelfLocation = ' Living room, shelf 2 '
     }
     $response = Invoke-WebRequest "$baseUrl/api/library/books" -Method Post -ContentType 'application/json' `
         -Body ($payload | ConvertTo-Json) -UseBasicParsing
@@ -68,7 +68,7 @@ try {
     Assert-True ($saved.isbn -eq '9781784702861') 'ISBN must be normalized.'
     Assert-True ($null -eq $saved.rating) 'Unread books must have no rating.'
     Assert-True ($saved.purchaseLocation -eq 'Local store') 'Purchase location must be trimmed.'
-    Assert-True ($saved.genre -eq 'Fantasy') 'Genre must be trimmed and saved.'
+    Assert-True (($saved.genres -join '|') -eq 'Fantasy|Adventure') 'Genres must be trimmed, deduplicated, and saved as an array.'
     Assert-True ($saved.shelfLocation -eq 'Living room, shelf 2') 'Shelf location must be trimmed and saved.'
     Assert-True ($saved.pageCount -eq 498 -and $saved.description -eq $payload.description) 'Metadata must be retained.'
     Assert-True ($saved.sourceBookId -eq $payload.sourceBookId -and $saved.coverUrl -eq $payload.coverUrl) 'Source and cover must be retained.'
@@ -78,7 +78,7 @@ try {
 
     foreach ($invalid in @(@{ title = '   ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
             @{ title = 'Invalid'; pageCount = -1 }, @{ title = 'Invalid'; isbn = 'wrong' },
-            @{ title = 'Invalid'; genre = ('x' * 101) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) })) {
+            @{ title = 'Invalid'; genres = @(('x' * 101)) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) })) {
         $status = 0
         try {
             Invoke-WebRequest "$baseUrl/api/library/books" -Method Post -ContentType 'application/json' `
@@ -89,7 +89,7 @@ try {
     $manual = Invoke-RestMethod "$baseUrl/api/owned-books" -Method Post -ContentType 'application/json' `
         -Body (@{ title = 'Manual Book'; isRead = $true; rating = 5 } | ConvertTo-Json)
     Assert-True ($manual.rating -eq 5 -and $null -eq $manual.sourceBookId) 'Manual entry and read rating must save.'
-    Assert-True ($null -eq $manual.genre -and $null -eq $manual.shelfLocation) 'Genre and shelf location are optional.'
+    Assert-True ($manual.genres.Count -eq 0 -and $null -eq $manual.shelfLocation) 'Genres default to an empty array and shelf location is optional.'
     $books = Invoke-RestMethod "$baseUrl/api/owned-books"
     Assert-True ($books.Count -eq 2) 'Invalid requests must not insert records.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
@@ -104,8 +104,8 @@ try {
     $reloaded = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
     foreach ($field in @('title', 'author', 'isbn', 'edition', 'publisher', 'publicationYear',
             'pageCount', 'description', 'coverUrl', 'sourceBookId', 'format', 'authorGender', 'editionId',
-            'genre', 'shelfLocation')) {
-        Assert-True ($reloaded.$field -eq $saved.$field) "Persisted $field must survive restarting the API."
+            'genres', 'shelfLocation')) {
+        Assert-True ((ConvertTo-Json -InputObject $reloaded.$field -Compress) -eq (ConvertTo-Json -InputObject $saved.$field -Compress)) "Persisted $field must survive restarting the API."
     }
     $firstShelf = Invoke-RestMethod "$baseUrl/api/shelves" -Method Post -ContentType 'application/json' `
         -Body (@{ name = 'Study shelf' } | ConvertTo-Json)
@@ -116,7 +116,7 @@ try {
         isbn = '0-8044-2957-X'; description = ' Updated description '; coverUrl = '/api/books/updated-volume/cover'
         format = ' Hardcover '; authorGender = 'female'; isRead = $true; rating = 4.5
         purchaseLocation = ' New store '; publicationYear = 2024; publisher = ' New publisher '
-        edition = ' Second '; pageCount = 300; genre = ' Mystery '; shelfLocation = ' Study shelf '
+        edition = ' Second '; pageCount = 300; genres = @(' Mystery ', 'Crime'); shelfLocation = ' Study shelf '
         shelfId = $firstShelf.id
         # Server-controlled fields must not be overwritten by request JSON.
         id = [guid]::NewGuid(); editionId = [guid]::NewGuid(); createdAtUtc = '2000-01-01T00:00:00Z'
@@ -128,7 +128,7 @@ try {
     Assert-True ($updated.id -eq $saved.id -and $updated.editionId -eq $saved.editionId `
         -and $updated.createdAtUtc -eq $saved.createdAtUtc) 'PUT must preserve IDs and creation time.'
     Assert-True ($updated.title -eq 'Updated Library Book' -and $updated.author -eq 'Updated Author') 'Updated work fields must be normalized.'
-    Assert-True ($updated.description -eq 'Updated description' -and $updated.genre -eq 'Mystery' `
+    Assert-True ($updated.description -eq 'Updated description' -and ($updated.genres -join '|') -eq 'Mystery|Crime' `
         -and $updated.authorGender -eq 'female') 'All work fields must update.'
     Assert-True ($updated.isbn -eq '080442957X' -and $updated.sourceBookId -eq 'updated-volume' `
         -and $updated.coverUrl -eq '/api/books/updated-volume/cover') 'Provider and ISBN fields must update.'
@@ -151,7 +151,7 @@ try {
     foreach ($invalid in @(@{ title = ' ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
             @{ title = 'Invalid'; isbn = 'bad' }, @{ title = 'Invalid'; pageCount = -1 },
             @{ title = 'Invalid'; publicationYear = -1 }, @{ title = 'Invalid'; shelfId = [guid]::NewGuid() },
-            @{ title = 'Invalid'; genre = ('x' * 101) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) },
+            @{ title = 'Invalid'; genres = @(('x' * 101)) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) },
             @{ title = 'Invalid'; sourceBookId = 'bad id' }, @{ title = 'Invalid'; coverUrl = 'https://example.com/cover' })) {
         $status = 0
         try {
@@ -175,9 +175,10 @@ try {
     $cleared = Invoke-RestMethod "$baseUrl/api/owned-books/$($saved.id)" -Method Put -ContentType 'application/json' `
         -Body (@{ title = 'Minimal update'; isRead = $false; rating = 5 } | ConvertTo-Json)
     foreach ($field in @('sourceBookId', 'isbn', 'description', 'coverUrl', 'format', 'authorGender', 'rating',
-            'purchaseLocation', 'shelfLocation', 'shelfId', 'genre', 'publicationYear', 'publisher', 'edition', 'pageCount')) {
+            'purchaseLocation', 'shelfLocation', 'shelfId', 'publicationYear', 'publisher', 'edition', 'pageCount')) {
         Assert-True ($null -eq $cleared.$field) "Omitted optional field $field must be cleared by PUT."
     }
+    Assert-True ($cleared.genres.Count -eq 0) 'Omitting genres from PUT must clear the array.'
     Assert-True ($cleared.author -eq '' -and -not $cleared.isRead) 'PUT defaults must replace editable fields.'
     $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($secondShelf.id)"
     Assert-True ($shelf.bookIds.Count -eq 0) 'Clearing shelfId must remove shelf membership.'

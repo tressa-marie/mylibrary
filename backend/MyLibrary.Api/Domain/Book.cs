@@ -8,5 +8,5 @@ public sealed class Book
     public string Author { get; set; } = "";
     public string? Description { get; set; }
     public string? AuthorGender { get; set; }
-    public string? Genre { get; set; }
+    public string[] Genres { get; set; } = [];
 }

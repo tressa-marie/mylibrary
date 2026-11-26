@@ -36,8 +36,8 @@ namespace MyLibrary.Api.Migrations
                         .HasMaxLength(20000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Genre")
-                        .HasMaxLength(100)
+                    b.PrimitiveCollection<string>("Genres")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")

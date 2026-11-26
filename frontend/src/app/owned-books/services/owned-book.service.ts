@@ -17,4 +17,8 @@ export class OwnedBookService {
   create(book: CreateOwnedBookRequest) {
     return this.http.post<SavedOwnedBook>('/api/library/books', book);
   }
+
+  update(id: string, book: CreateOwnedBookRequest) {
+    return this.http.put<SavedOwnedBook>(`/api/library/books/${encodeURIComponent(id)}`, book);
+  }
 }

@@ -47,6 +47,9 @@ Click a library row or its title to open `/library/books/{id}`. The detail page
 loads the saved copy through `GET /api/library/books/{id}` and shows its stored
 metadata and ownership details. Missing values display `-`, and ratings display
 only the number. Use **Back to library** to return to the table.
+The **Edit Book** button opens `/library/books/{id}/edit` with the saved values
+prefilled in the Add Book form. **Save** sends a PUT request and returns to the
+updated detail page. Failed saves keep the entered values available for retry.
 
 This local setup uses HTTP and does not require a trusted HTTPS certificate.
 
@@ -218,8 +221,15 @@ Invoke-RestMethod http://localhost:5080/api/library/books
 
 Only title is required. Optional fields also include `sourceBookId`, `isbn`,
 `description`, `coverUrl`, `authorGender`, `publisher`, `edition`, `pageCount`,
-`genre` (up to 100 characters), and `shelfLocation` (up to 500 characters).
+`genres` (an array of strings, each up to 100 characters), and `shelfLocation`
+(up to 500 characters). Genres are trimmed, blank entries removed, and duplicates
+merged without regard to case. Missing genres are returned as `[]`.
 `AddGenreAndShelfLocation` adds nullable fields so existing books remain compatible.
+`AddBookGenres` converts an existing genre into a one-item array and missing
+genres into empty arrays. Add Book and Edit Book use removable genre pills:
+type a genre and press Enter to add it. Saving also includes any text still in
+the genre input. Genre lists appear in the library table and book details, and
+the library genre filter matches any genre assigned to a book.
 Strings are trimmed, ISBN separators are removed, and unread books have no rating.
 Invalid input returns `400` with field errors: rating must be 0–5, year and page
 count cannot be negative, and ISBN must contain 10 or 13 valid characters. Covers

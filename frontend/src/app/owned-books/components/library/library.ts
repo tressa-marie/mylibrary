@@ -21,15 +21,22 @@ export class Library implements OnInit {
   protected readonly genreFilter = signal<string | null>(null);
   protected readonly readFilter = signal<'all' | 'read' | 'unread'>('all');
   protected readonly shelfFilter = signal<string | null>(null);
-  protected readonly genreOptions = computed(() => this.optionsFor('genre'));
-  protected readonly shelfOptions = computed(() => this.optionsFor('shelfLocation'));
+  protected readonly genreOptions = computed(() =>
+    this.filterOptions(this.books().flatMap((book) => book.genres ?? [])),
+  );
+  protected readonly shelfOptions = computed(() =>
+    this.filterOptions(this.books().map((book) => book.shelfLocation)),
+  );
   protected readonly hasFilters = computed(
     () => this.genreFilter() !== null || this.readFilter() !== 'all' || this.shelfFilter() !== null,
   );
   private readonly filteredBooks = computed(() =>
     this.books().filter(
       (book) =>
-        (this.genreFilter() === null || this.filterValue(book.genre) === this.genreFilter()) &&
+        (this.genreFilter() === null ||
+          (this.genreFilter() === ''
+            ? !book.genres?.length
+            : book.genres?.some((genre) => this.filterValue(genre) === this.genreFilter()))) &&
         (this.readFilter() === 'all' ||
           (this.readFilter() === 'read' ? book.isRead : !book.isRead)) &&
         (this.shelfFilter() === null ||
@@ -71,10 +78,10 @@ export class Library implements OnInit {
     return value?.trim().toLocaleLowerCase() || '';
   }
 
-  private optionsFor(field: 'genre' | 'shelfLocation') {
+  private filterOptions(values: (string | null | undefined)[]) {
     const options = new Map<string, string>();
-    for (const book of this.books()) {
-      const label = book[field]?.trim();
+    for (const entry of values) {
+      const label = entry?.trim();
       const value = this.filterValue(label);
       if (label && !options.has(value)) options.set(value, label);
     }
@@ -111,7 +118,7 @@ export class Library implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (books) => {
-          this.books.set(books);
+          this.books.set(books.map((book) => ({ ...book, genres: book.genres ?? [] })));
           this.state.set('ready');
         },
         error: () => this.state.set('error'),

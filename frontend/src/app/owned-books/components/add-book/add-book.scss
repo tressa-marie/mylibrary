@@ -2,6 +2,12 @@
 
 :host {
   display: block;
+  @include mat.chips-overrides(
+    (
+      container-shape-radius: 999px,
+      elevated-container-color: #e1ede3,
+    )
+  );
 }
 
 h2 {
@@ -25,9 +31,11 @@ form {
 mat-form-field {
   width: 100%;
 
-  @include mat.form-field-overrides((
-    outlined-container-shape: 8px,
-  ));
+  @include mat.form-field-overrides(
+    (
+      outlined-container-shape: 8px,
+    )
+  );
 }
 
 .book-cover-column {
@@ -74,10 +82,10 @@ textarea {
 }
 
 .form-line-group {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
 }
 
 .author-field {

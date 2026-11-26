@@ -9,7 +9,7 @@ export class OwnedBook {
   rating: number | null = null;
   purchaseLocation = '';
   shelfId: string | null = null;
-  genre = '';
+  genres: string[] = [];
   publicationYear: number | null = null;
   publisher = '';
   edition = '';

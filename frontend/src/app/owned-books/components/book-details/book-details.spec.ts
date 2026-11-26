@@ -14,7 +14,7 @@ describe('Saved library book details', () => {
     sourceBookId: 'google-volume-id',
     title: 'My saved title',
     author: 'Saved Author',
-    genre: 'Fantasy',
+    genres: ['Fantasy', 'Adventure'],
     shelfLocation: 'Office, shelf 2',
     isRead: true,
     rating: 4.5,
@@ -44,7 +44,7 @@ describe('Saved library book details', () => {
     http.expectOne('/api/library/books').flush([saved]);
     harness.detectChanges();
     const row = harness.routeNativeElement!.querySelector('tbody tr')!;
-    expect(row.querySelector('a')?.getAttribute('href')).toBe(`/library/books/${id}`);
+    expect(row.querySelector('th a')?.getAttribute('href')).toBe(`/library/books/${id}`);
     row.querySelector<HTMLElement>('td')!.click();
     await harness.fixture.whenStable();
     expect(TestBed.inject(Router).url).toBe(`/library/books/${id}`);
@@ -56,6 +56,9 @@ describe('Saved library book details', () => {
     harness.detectChanges();
     const element = harness.routeNativeElement!;
     expect(element.querySelector('h1')?.textContent).toBe(saved.title);
+    expect(
+      Array.from(element.querySelectorAll('.genre-tags li'), (item) => item.textContent?.trim()),
+    ).toEqual(['Fantasy', 'Adventure']);
     for (const value of [
       'Saved Author',
       'Fantasy',
@@ -79,7 +82,7 @@ describe('Saved library book details', () => {
     await harness.navigateByUrl(`/library/books/${id}`);
     http.expectOne(`/api/library/books/${id}`).flush({
       ...saved,
-      genre: null,
+      genres: [],
       shelfLocation: null,
       isRead: false,
       rating: 4,
@@ -87,11 +90,11 @@ describe('Saved library book details', () => {
     });
     harness.detectChanges();
     const element = harness.routeNativeElement!;
-    for (const label of ['Genre', 'Shelf location', 'Rating', 'Author gender']) {
+    for (const label of ['Genres', 'Shelf location', 'Rating', 'Author gender']) {
       const field = Array.from(element.querySelectorAll('dl div')).find(
         (div) => div.querySelector('dt')?.textContent === label,
       );
-      expect(field?.querySelector('dd')?.textContent).toBe('-');
+      expect(field?.querySelector('dd')?.textContent?.trim()).toBe('-');
     }
     element.querySelector('img')!.dispatchEvent(new Event('error'));
     harness.detectChanges();

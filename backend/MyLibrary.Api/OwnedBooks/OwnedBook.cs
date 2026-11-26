@@ -30,7 +30,7 @@ public sealed class OwnedBook
     public Guid? ShelfId { get; set; }
     [JsonIgnore]
     public Shelf? Shelf { get; set; }
-    [NotMapped] public string? Genre { get => EditionDetails.Book.Genre; set => EditionDetails.Book.Genre = value; }
+    [NotMapped] public string[] Genres { get => EditionDetails.Book.Genres; set => EditionDetails.Book.Genres = value; }
     [NotMapped] public int? PublicationYear { get => EditionDetails.PublicationYear; set => EditionDetails.PublicationYear = value; }
     [NotMapped] public string? Publisher { get => EditionDetails.Publisher; set => EditionDetails.Publisher = value; }
     [NotMapped] public string? Edition { get => EditionDetails.EditionName; set => EditionDetails.EditionName = value; }

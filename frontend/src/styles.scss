@@ -2,22 +2,26 @@
 @use './theme-colors' as theme;
 
 html {
-  @include mat.theme((
-    color: (
-      primary: theme.$primary-palette,
-      tertiary: theme.$tertiary-palette,
-      theme-type: light,
-    ),
-    typography: system-ui,
-    density: 0,
-  ));
+  @include mat.theme(
+    (
+      color: (
+        primary: theme.$primary-palette,
+        tertiary: theme.$tertiary-palette,
+        theme-type: light,
+      ),
+      typography: system-ui,
+      density: 0,
+    )
+  );
 
-  @include mat.theme-overrides((
-    primary: #172b23,
-    on-primary: #ffffff,
-    secondary: #bf4d38,
-    on-secondary: #ffffff,
-  ));
+  @include mat.theme-overrides(
+    (
+      primary: #172b23,
+      on-primary: #ffffff,
+      secondary: #bf4d38,
+      on-secondary: #ffffff,
+    )
+  );
 }
 
 @font-face {
@@ -94,4 +98,21 @@ button {
   position: fixed;
   bottom: max(24px, env(safe-area-inset-bottom));
   right: max(24px, env(safe-area-inset-right));
+}
+
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.genre-tags li {
+  padding: 0.2rem 0.65rem;
+  border-radius: 1rem;
+  background: #e1ede3;
+  color: #254d3c;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }

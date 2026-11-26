@@ -38,7 +38,7 @@ export class BookDetails implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((book) => {
-        this.book.set(book);
+        this.book.set({ ...book, genres: book.genres ?? [] });
         this.state.set('ready');
       });
   }

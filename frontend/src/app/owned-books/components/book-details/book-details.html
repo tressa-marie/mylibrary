@@ -1,5 +1,7 @@
 <section class="book-details" aria-labelledby="details-title">
-  <a class="back-link" routerLink="/">← Back to library</a>
+  <div class="details-actions">
+    <a class="back-link" routerLink="/">← Back to library</a>
+  </div>
   @switch (state()) {
     @case ('loading') {
       <h1 id="details-title">Book details</h1>
@@ -33,12 +35,25 @@
             }
           </aside>
           <div>
-            <h1 id="details-title">{{ saved.title || '-' }}</h1>
+            <div class="title-row">
+              <h1 id="details-title">{{ saved.title || '-' }}</h1>
+              <a class="edit-book" [routerLink]="['/library/books', saved.id, 'edit']">Edit Book</a>
+            </div>
             <p class="author">{{ saved.author || '-' }}</p>
             <dl>
               <div>
-                <dt>Genre</dt>
-                <dd>{{ saved.genre || '-' }}</dd>
+                <dt>Genres</dt>
+                <dd>
+                  @if (saved.genres.length) {
+                    <ul class="genre-tags" aria-label="Genres">
+                      @for (genre of saved.genres; track genre) {
+                        <li>{{ genre }}</li>
+                      }
+                    </ul>
+                  } @else {
+                    -
+                  }
+                </dd>
               </div>
               <div>
                 <dt>Read status</dt>

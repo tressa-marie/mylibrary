@@ -10,7 +10,38 @@ a {
 }
 .back-link {
   display: inline-block;
+}
+.details-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+.edit-book {
+  flex-shrink: 0;
+  border: 1px solid #254d3c;
+  border-radius: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  background: #254d3c;
+  color: #fffdf8;
+  font-weight: 600;
+  text-decoration: none;
+}
+.edit-book:hover {
+  background: #193829;
+}
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.title-row h1 {
+  min-width: 0;
+  margin: 0;
 }
 .details-layout {
   display: grid;

@@ -76,6 +76,16 @@ try {
   inspect(db => assert.equal(db.prepare('SELECT Id FROM OwnedBooks').get().Id, original.Id));
   migrate('AddShelves');
   inspect(db => assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []));
+  inspect(db => db.prepare('UPDATE Books SET Genre = ?').run(' Fantasy "Classic" '));
+  migrate('AddBookGenres');
+  inspect(db => {
+    assert.deepEqual(JSON.parse(db.prepare('SELECT Genres FROM Books').get().Genres), ['Fantasy "Classic"']);
+    assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  });
+  migrate('AddShelves');
+  inspect(db => assert.equal(db.prepare('SELECT Genre FROM Books').get().Genre, 'Fantasy "Classic"'));
+  migrate('AddBookGenres');
+  inspect(db => assert.deepEqual(JSON.parse(db.prepare('SELECT Genres FROM Books').get().Genres), ['Fantasy "Classic"']));
   console.log('PASS: existing records survive upgrade, rollback, and reapplication; foreign keys protect relationships.');
 } finally {
   assert.equal(dirname(resolve(directory)), resolve(tmpdir()));

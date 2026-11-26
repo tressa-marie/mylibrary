@@ -2,6 +2,12 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: 'library/books/:id/edit',
+    loadComponent: () =>
+      import('./owned-books/components/add-book/add-book').then((m) => m.AddBook),
+    title: 'Edit book | My Library',
+  },
+  {
     path: 'shelves',
     loadComponent: () => import('./shelves/shelves').then((m) => m.Shelves),
     title: 'Shelves | My Library',

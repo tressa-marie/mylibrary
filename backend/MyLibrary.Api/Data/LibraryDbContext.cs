@@ -20,7 +20,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
             book.Property(x => x.Author).IsRequired().HasMaxLength(500);
             book.Property(x => x.Description).HasMaxLength(20000);
             book.Property(x => x.AuthorGender).HasMaxLength(20);
-            book.Property(x => x.Genre).HasMaxLength(100);
+            book.PrimitiveCollection(x => x.Genres).IsRequired();
         });
         modelBuilder.Entity<Edition>(edition =>
         {

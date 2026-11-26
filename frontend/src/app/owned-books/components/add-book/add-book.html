@@ -1,7 +1,13 @@
 <div class="add-book-layout">
   <div class="book-cover-column">
-    <h2>Add a Book</h2>
-    <p>When you add a book to your collection, it will be listed in your library.</p>
+    <h2>{{ editId() ? 'Edit Book' : 'Add a Book' }}</h2>
+    <p>
+      {{
+        editId()
+          ? 'Update the details of this book in your library.'
+          : 'When you add a book to your collection, it will be listed in your library.'
+      }}
+    </p>
     @if (book.coverUrl && !coverFailed) {
       <img
         class="book-cover"
@@ -16,6 +22,13 @@
   <form #bookForm="ngForm" (ngSubmit)="addBook(bookForm)">
     @if (loading()) {
       <p role="status">Loading book details…</p>
+    }
+    @if (editLoadError()) {
+      <div role="alert">
+        <p>{{ editLoadError() }}</p>
+        <button mat-button type="button" (click)="loadSavedBook()">Retry book details</button>
+        <a routerLink="/">Back to library</a>
+      </div>
     }
     <div>
       <mat-form-field appearance="outline">
@@ -108,15 +121,27 @@
     </div>
     <div class="form-line-group">
       <mat-form-field appearance="outline">
-        <mat-label>Genre</mat-label>
-        <input
-          matInput
-          id="genre"
-          name="genre"
-          type="text"
-          maxlength="100"
-          [(ngModel)]="book.genre"
-        />
+        <mat-label>Genres</mat-label>
+        <mat-chip-grid #genreGrid aria-label="Book genres" [disabled]="loading() || saving()">
+          @for (genre of book.genres; track genre) {
+            <mat-chip-row (removed)="removeGenre(genre)">
+              {{ genre }}
+              <button matChipRemove type="button" [attr.aria-label]="'Remove ' + genre">×</button>
+            </mat-chip-row>
+          }
+          <input
+            id="genre"
+            type="text"
+            maxlength="100"
+            [matChipInputFor]="genreGrid"
+            [matChipInputSeparatorKeyCodes]="[13]"
+            (matChipInputTokenEnd)="addGenre($event)"
+            (keydown.enter)="$event.preventDefault()"
+            [(ngModel)]="genreDraft"
+            [ngModelOptions]="{ standalone: true }"
+          />
+        </mat-chip-grid>
+        <mat-hint>Press Enter to add each genre.</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Shelf location</mat-label>
@@ -151,6 +176,9 @@
           <p>No shelves yet. <a routerLink="/shelves">Create a shelf</a> or save without one.</p>
         }
       }
+    }
+    @if (genreError()) {
+      <p role="alert">{{ genreError() }}</p>
     }
     <details class="advanced-options">
       <summary>
@@ -250,8 +278,12 @@
     @if (successMessage()) {
       <p role="status">{{ successMessage() }}</p>
     }
-    <button mat-flat-button type="submit" [disabled]="loading() || saving()">
-      {{ saving() ? 'Adding…' : 'Add Book' }}
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="loading() || saving() || (!!editId() && !editLoaded())"
+    >
+      {{ editId() ? (saving() ? 'Saving…' : 'Save') : saving() ? 'Adding…' : 'Add Book' }}
     </button>
   </form>
 </div>

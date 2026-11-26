@@ -17,7 +17,7 @@ public sealed class CreateOwnedBookRequest
     public string? PurchaseLocation { get; set; }
     public string? ShelfLocation { get; set; }
     public Guid? ShelfId { get; set; }
-    public string? Genre { get; set; }
+    public string[]? Genres { get; set; } = [];
     public int? PublicationYear { get; set; }
     public string? Publisher { get; set; }
     public string? Edition { get; set; }
@@ -49,7 +49,8 @@ public sealed class CreateOwnedBookRequest
         book.PurchaseLocation = Optional(PurchaseLocation);
         book.ShelfLocation = Optional(ShelfLocation);
         book.ShelfId = ShelfId;
-        book.Genre = Optional(Genre);
+        book.Genres = (Genres ?? []).Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         book.PublicationYear = PublicationYear;
         book.Publisher = Optional(Publisher);
         book.Edition = Optional(Edition);
@@ -72,7 +73,8 @@ public sealed class CreateOwnedBookRequest
         MaxLength("format", book.Format, 100);
         MaxLength("purchaseLocation", book.PurchaseLocation, 500);
         MaxLength("shelfLocation", book.ShelfLocation, 500);
-        MaxLength("genre", book.Genre, 100);
+        if (book.Genres.Any(genre => genre.Length > 100))
+            errors["genres"] = ["Use at most 100 characters for each genre."];
         MaxLength("publisher", book.Publisher, 500);
         MaxLength("edition", book.Edition, 500);
         if (book.SourceBookId is { } sourceId && !Regex.IsMatch(sourceId, @"^[a-zA-Z0-9_-]{1,100}$"))

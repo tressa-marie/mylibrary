@@ -126,6 +126,50 @@ describe('Add book saving', () => {
     button.click();
   }
 
+  async function enterGenre(value: string) {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
+    input.value = value;
+    input.dispatchEvent(new Event('input'));
+    const enter = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      code: 'Enter',
+      keyCode: 13,
+      bubbles: true,
+      cancelable: true,
+    });
+    input.dispatchEvent(enter);
+    expect(enter.defaultPrevented).toBe(true);
+    await fixture.whenStable();
+  }
+
+  it('adds genre pills with Enter, ignores blanks and duplicates, and removes individual tags', async () => {
+    await enterTitle('My Book');
+    await enterGenre(' Fantasy ');
+    await enterGenre('Adventure');
+    await enterGenre('fantasy');
+    await enterGenre('   ');
+    expect(fixture.componentInstance.book.genres).toEqual(['Fantasy', 'Adventure']);
+    expect(fixture.nativeElement.querySelectorAll('mat-chip-row').length).toBe(2);
+    http.expectNone('/api/library/books');
+    fixture.nativeElement.querySelector('button[aria-label="Remove Fantasy"]').click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.book.genres).toEqual(['Adventure']);
+    expect(fixture.nativeElement.querySelector('#genre').value).toBe('');
+  });
+
+  it('includes a pending genre when saving without pressing Enter', async () => {
+    await enterTitle('My Book');
+    const genre: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
+    genre.value = ' History ';
+    genre.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    submit();
+    const request = http.expectOne('/api/library/books');
+    expect(request.request.body.genres).toEqual(['History']);
+    request.flush({ ...request.request.body, id: 'saved-id' });
+    await fixture.whenStable();
+  });
+
   it('rejects whitespace titles without sending a save request', async () => {
     await enterTitle('   ');
     submit();
@@ -143,6 +187,10 @@ describe('Add book saving', () => {
     const genre: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
     genre.value = ' Fantasy ';
     genre.dispatchEvent(new Event('input'));
+    genre.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true, cancelable: true }),
+    );
+    await fixture.whenStable();
     const shelf: HTMLSelectElement = fixture.nativeElement.querySelector('#shelf-location');
     expect(Array.from(shelf.options, (option) => option.textContent?.trim())).toEqual([
       'No shelf',
@@ -161,7 +209,7 @@ describe('Add book saving', () => {
     expect(request.request.body).toMatchObject({
       title: 'My Book',
       author: 'An Author',
-      genre: 'Fantasy',
+      genres: ['Fantasy'],
       shelfId: 'shelf-1',
       shelfLocation: 'Favorites (Living room)',
       sourceBookId: 'source-id',
@@ -191,7 +239,7 @@ describe('Add book saving', () => {
       title: 'Second Book',
       author: '',
       sourceBookId: null,
-      genre: null,
+      genres: [],
       shelfLocation: null,
       shelfId: null,
     });
