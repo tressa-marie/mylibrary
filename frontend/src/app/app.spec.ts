@@ -24,6 +24,7 @@ describe('App shell', () => {
     expect(element.querySelector('nav')?.textContent).toContain('Library');
     expect(element.querySelector('nav a[href="/shelves"]')).toBeNull();
     expect(element.querySelector('main')).toBeTruthy();
+    expect(element.querySelector('.floating-btn--fixed')?.getAttribute('href')).toBe('/search');
     expect(element.querySelector('.book-count')?.textContent?.trim()).toBe('2 books');
     expect(element.querySelector('.profile-summary')?.firstElementChild).toBe(
       element.querySelector('.book-count'),

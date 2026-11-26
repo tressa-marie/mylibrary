@@ -234,7 +234,7 @@ describe('Library', () => {
     fixture.detectChanges();
     expect(element.textContent).toContain('Your library is empty');
     expect(element.querySelector('table')).toBeNull();
-    expect(element.querySelector('a[href="/add-book"]')).toBeTruthy();
+    expect(element.querySelector('.add-book')?.getAttribute('href')).toBe('/search');
     expect(element.querySelector('a[href="/search"]')).toBeTruthy();
   });
 

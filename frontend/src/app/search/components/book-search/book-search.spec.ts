@@ -52,6 +52,11 @@ describe('Book search', () => {
   }
 
   it('does not submit empty or whitespace searches', () => {
+    expect(element.querySelector('h1')?.textContent).toBe('Search book to add');
+    expect(element.textContent).not.toContain('Hold a library');
+    expect(element.textContent).not.toContain('In your pocket');
+    expect(element.querySelector('.manual-button')?.getAttribute('href')).toBe('/add-book');
+    expect(element.querySelector('.manual-button')?.textContent).toBe('Add Manually');
     search('   ');
     http.expectNone((r) => r.url === '/api/books');
     expect(element.querySelector<HTMLButtonElement>('[type="submit"]')!.disabled).toBe(true);
