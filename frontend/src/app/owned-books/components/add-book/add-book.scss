@@ -93,6 +93,18 @@ textarea {
   min-width: 0;
 }
 
+.reading-choices {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.reading-status-row,
+.description-field {
+  padding-bottom: 1rem;
+}
+
 .advanced-options {
   margin-bottom: 1.5rem;
 

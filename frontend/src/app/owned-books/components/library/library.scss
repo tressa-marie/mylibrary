@@ -212,6 +212,10 @@ tbody tr:focus-within > * {
   background: #e1ede3;
   color: #254d3c;
 }
+.read-status.dnf {
+  background: #f7ebd1;
+  color: #795714;
+}
 .message {
   padding: 2.5rem 1.5rem;
   border: 1px solid #dedbd1;

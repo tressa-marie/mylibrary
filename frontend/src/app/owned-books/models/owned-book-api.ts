@@ -8,6 +8,11 @@ export interface CreateOwnedBookRequest {
   format: string | null;
   authorGender: string | null;
   isRead: boolean;
+  isDnf?: boolean | null;
+  wantToSell?: boolean | null;
+  bookCost?: number | null;
+  dateAcquired?: string | null;
+  dateRead?: string | null;
   rating: number | null;
   purchaseLocation: string | null;
   shelfLocation: string | null;
@@ -32,6 +37,7 @@ export type LibraryBookSummary = Pick<
   | 'author'
   | 'genres'
   | 'isRead'
+  | 'isDnf'
   | 'rating'
   | 'shelfId'
   | 'shelfLocation'

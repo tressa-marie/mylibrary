@@ -126,6 +126,37 @@ describe('Add book saving', () => {
     button.click();
   }
 
+  for (const scenario of [
+    { clicks: ['is-read'], read: true, dnf: false },
+    { clicks: ['is-read', 'is-dnf'], read: true, dnf: true },
+    { clicks: ['is-dnf', 'is-read'], read: true, dnf: false },
+    { clicks: ['is-dnf', 'is-dnf'], read: false, dnf: false },
+    { clicks: ['is-read', 'is-read'], read: false, dnf: false },
+  ]) {
+    it(`keeps reading checkboxes exclusive and saves the correct flags after ${scenario.clicks.join(', ')}`, async () => {
+      await enterTitle('Reading status book');
+      for (const id of scenario.clicks) {
+        fixture.nativeElement.querySelector(`#${id} input`).click();
+        await fixture.whenStable();
+        expect(
+          fixture.nativeElement.querySelectorAll('.reading-choices input:checked').length,
+        ).toBeLessThanOrEqual(1);
+      }
+      expect(fixture.nativeElement.querySelector('#is-read input').checked).toBe(
+        scenario.read && !scenario.dnf,
+      );
+      expect(fixture.nativeElement.querySelector('#is-dnf input').checked).toBe(scenario.dnf);
+      submit();
+      const request = http.expectOne('/api/library/books');
+      expect(request.request.body).toMatchObject({ isRead: scenario.read, isDnf: scenario.dnf });
+      request.flush({ ...request.request.body, id: 'saved-id' });
+      await fixture.whenStable();
+      expect(fixture.nativeElement.querySelectorAll('.reading-choices input:checked').length).toBe(
+        0,
+      );
+    });
+  }
+
   async function enterGenre(value: string) {
     const input: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
     input.value = value;

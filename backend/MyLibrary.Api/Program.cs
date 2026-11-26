@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var libraryConnectionString = builder.Configuration.GetConnectionString("Library")
     ?? throw new InvalidOperationException("The Library database connection string is missing.");
 builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseSqlite(libraryConnectionString));
+    options.UseNpgsql(libraryConnectionString));
 builder.Services.AddHealthChecks();
 if (builder.Configuration["Books:Provider"] != "GoogleBooks")
     throw new InvalidOperationException("Unsupported Books:Provider. Configure GoogleBooks or register another IBookProvider adapter.");
@@ -29,6 +29,8 @@ if (app.Environment.IsDevelopment())
 }
 if (string.IsNullOrWhiteSpace(builder.Configuration["Books:ApiKey"]))
     app.Logger.LogWarning("Books:ApiKey is not configured. Set Books__ApiKey in the terminal that starts the API.");
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapBooks();
 app.MapOwnedBooks();
 app.MapShelves();
@@ -41,5 +43,5 @@ app.MapHealthChecks("/api/health", new Microsoft.AspNetCore.Diagnostics.HealthCh
         service = "My Library API"
     })
 });
-
+app.MapFallbackToFile("index.html");
 app.Run();

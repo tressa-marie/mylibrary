@@ -24,6 +24,11 @@ public sealed class OwnedBook
 
     public bool IsRead { get; set; }
     public double? Rating { get; set; }
+    public bool? IsDnf { get; set; }
+    public bool? WantToSell { get; set; }
+    public decimal? BookCost { get; set; }
+    public DateOnly? DateAcquired { get; set; }
+    public DateOnly? DateRead { get; set; }
 
     public string? PurchaseLocation { get; set; }
     public string? ShelfLocation { get; set; }

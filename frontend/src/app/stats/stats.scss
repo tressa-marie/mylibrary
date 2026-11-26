@@ -49,6 +49,27 @@ p {
   position: relative;
   height: 320px;
 }
+.genre-chart-layout {
+  margin-top: 2rem;
+}
+.genre-chart-container {
+  position: relative;
+  min-height: 260px;
+}
+.genre-data {
+  margin-top: 1.5rem;
+}
+.genre-data summary {
+  color: #254d3c;
+  cursor: pointer;
+}
+.genre-data table {
+  margin-top: 1rem;
+}
+.genre-data tbody th {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 table {
   width: 100%;
   border-collapse: collapse;
