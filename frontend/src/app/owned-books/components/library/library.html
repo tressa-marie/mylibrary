@@ -20,26 +20,120 @@
     }
     @case ('ready') {
       @if (books().length) {
-        <p class="book-count" role="status">
-          {{ books().length }} {{ books().length === 1 ? 'book' : 'books' }} in your library
-        </p>
+        <section class="filters" aria-label="Library filters">
+          <div class="filter-controls">
+            <div class="filter-field">
+              <label for="genre-filter">Genre</label>
+              <select
+                id="genre-filter"
+                [ngModel]="genreFilter()"
+                (ngModelChange)="genreFilter.set($event)"
+              >
+                <option [ngValue]="null">All genres</option>
+                <option value="">No genre</option>
+                @for (option of genreOptions(); track option.value) {
+                  <option [ngValue]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="read-filter">Read status</label>
+              <select
+                id="read-filter"
+                [ngModel]="readFilter()"
+                (ngModelChange)="readFilter.set($event)"
+              >
+                <option value="all">All books</option>
+                <option value="read">Read</option>
+                <option value="unread">Unread</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="shelf-filter">Shelf</label>
+              <select
+                id="shelf-filter"
+                [ngModel]="shelfFilter()"
+                (ngModelChange)="shelfFilter.set($event)"
+              >
+                <option [ngValue]="null">All shelves</option>
+                <option value="">No shelf</option>
+                @for (option of shelfOptions(); track option.value) {
+                  <option [ngValue]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+            <button
+              class="clear-filters"
+              type="button"
+              (click)="clearFilters()"
+              [disabled]="!hasFilters()"
+            >
+              Clear filters
+            </button>
+          </div>
+        </section>
         <div class="table-container" role="region" aria-label="Library books" tabindex="0">
           <table>
             <caption class="visually-hidden">
-              Books in your library, sorted by title
+              Books in your library. Select Title, Author, Rating, or Shelf location to sort.
             </caption>
             <thead>
               <tr>
-                <th scope="col">Title</th>
-                <th scope="col">Author</th>
+                <th scope="col" [attr.aria-sort]="sortField() === 'title' ? sortDirection() : null">
+                  <button class="sort-button" type="button" (click)="sortBy('title')">
+                    <span class="header-label">Title</span>
+                    @if (sortField() === 'title') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'author' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('author')">
+                    <span class="header-label">Author</span>
+                    @if (sortField() === 'author') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
                 <th scope="col">Genre</th>
                 <th scope="col">Read status</th>
-                <th scope="col">Rating</th>
-                <th scope="col">Shelf location</th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'rating' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('rating')">
+                    <span class="header-label">Rating</span>
+                    @if (sortField() === 'rating') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
+                <th
+                  scope="col"
+                  [attr.aria-sort]="sortField() === 'shelfLocation' ? sortDirection() : null"
+                >
+                  <button class="sort-button" type="button" (click)="sortBy('shelfLocation')">
+                    <span class="header-label">Shelf location</span>
+                    @if (sortField() === 'shelfLocation') {
+                      <span class="sort-arrow" aria-hidden="true">{{
+                        sortDirection() === 'ascending' ? '↑' : '↓'
+                      }}</span>
+                    }
+                  </button>
+                </th>
               </tr>
             </thead>
             <tbody>
-              @for (book of books(); track book.id) {
+              @for (book of sortedBooks(); track book.id) {
                 <tr (click)="openBook(book.id)">
                   <th scope="row">
                     <a
@@ -68,6 +162,12 @@
             </tbody>
           </table>
         </div>
+        @if (!sortedBooks().length) {
+          <div class="message" role="status">
+            <h2>No books match your filters</h2>
+            <p>Try different options or clear the filters to see all your books.</p>
+          </div>
+        }
       } @else {
         <div class="message" role="status">
           <h2>Your library is empty</h2>

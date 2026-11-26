@@ -16,7 +16,6 @@ h1 {
     serif;
 }
 .library-header p,
-.book-count,
 .muted {
   color: #625f57;
 }
@@ -51,6 +50,63 @@ button:hover {
   border-radius: 0.75rem;
   background: #fffdf8;
 }
+.filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.25rem;
+}
+.filters h2 {
+  margin: 0;
+  font:
+    500 1.35rem Georgia,
+    serif;
+}
+.filter-controls {
+  display: flex;
+  flex: 1 1 32rem;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.filter-field {
+  display: flex;
+  flex: 1 1 10rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.filter-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.filter-field select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #8b9288;
+  border-radius: 0.4rem;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+button.clear-filters {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  background: transparent;
+  color: #254d3c;
+}
+button.clear-filters:hover:enabled {
+  background: #eae5da;
+}
+button.clear-filters:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -69,6 +125,25 @@ thead {
 thead th {
   font-size: 0.85rem;
   white-space: nowrap;
+}
+button.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+}
+button.sort-button:hover {
+  background: transparent;
+  color: #254d3c;
+}
+.sort-arrow {
+  font-size: 1.2em;
 }
 tbody th {
   min-width: 12rem;
