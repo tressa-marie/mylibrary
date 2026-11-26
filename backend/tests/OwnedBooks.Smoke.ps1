@@ -54,7 +54,7 @@ try {
     $payload = @{
         title = '  Test Library Book  '; author = ' Test Author '; sourceBookId = 'ADbRywEACAAJ'
         isbn = '978-1784702861'; description = "First line`nSecond line"
-        coverUrl = '/api/books/ADbRywEACAAJ/cover'; format = 'Paperback'; authorGender = 'other'
+        coverUrl = '/api/books/ADbRywEACAAJ/cover'; format = 'Paperback'; authorGender = 'non-binary'
         isRead = $false; rating = 4; purchaseLocation = ' Local store '; publicationYear = 2020
         publisher = 'Vintage'; edition = 'First'; pageCount = 498
         genres = @(' Fantasy ', 'Adventure', 'fantasy', '  '); shelfLocation = ' Living room, shelf 2 '
@@ -87,22 +87,24 @@ try {
         Assert-True ($status -eq 400) 'Invalid data must return 400.'
     }
     $manual = Invoke-RestMethod "$baseUrl/api/owned-books" -Method Post -ContentType 'application/json' `
-        -Body (@{ title = 'Manual Book'; isRead = $true; rating = 5 } | ConvertTo-Json)
+        -Body (@{ title = 'Manual Book'; isRead = $true; rating = 5; authorGender = 'unknown' } | ConvertTo-Json)
+    Assert-True ($manual.authorGender -eq 'unknown') 'Explicit Unknown gender must be saved separately from blank values.'
     Assert-True ($manual.rating -eq 5 -and $null -eq $manual.sourceBookId) 'Manual entry and read rating must save.'
     Assert-True ($manual.genres.Count -eq 0 -and $null -eq $manual.shelfLocation) 'Genres default to an empty array and shelf location is optional.'
     $books = Invoke-RestMethod "$baseUrl/api/owned-books"
     Assert-True ($books.Count -eq 2) 'Invalid requests must not insert records.'
     $library = Invoke-RestMethod "$baseUrl/api/library/books"
     Assert-True ($library.Count -eq 2) 'Both routes must expose the same library.'
-    $expectedFields = @('id', 'title', 'author', 'genres', 'isRead', 'rating', 'shelfId', 'shelfLocation') | Sort-Object
+    $expectedFields = @('id', 'title', 'author', 'genres', 'isRead', 'rating', 'shelfId', 'shelfLocation', 'authorGender') | Sort-Object
     foreach ($summary in $library) {
         $fields = $summary.PSObject.Properties.Name | Sort-Object
-        Assert-True (($fields -join ',') -eq ($expectedFields -join ',')) 'The list endpoint must return only table summary fields.'
+        Assert-True (($fields -join ',') -eq ($expectedFields -join ',')) 'The list endpoint must return only library summary fields.'
     }
     $summary = $library | Where-Object { $_.id -eq $saved.id }
     Assert-True ($summary.title -eq $saved.title -and $summary.author -eq $saved.author `
         -and ($summary.genres -join '|') -eq ($saved.genres -join '|') `
-        -and $summary.shelfLocation -eq $saved.shelfLocation) 'List summaries must retain the table metadata.'
+        -and $summary.shelfLocation -eq $saved.shelfLocation `
+        -and $summary.authorGender -eq 'non-binary') 'List summaries must retain table metadata and author gender for stats.'
     $missingStatus = 0
     try { Invoke-WebRequest "$baseUrl/api/owned-books/$([guid]::NewGuid())" -UseBasicParsing | Out-Null }
     catch { $missingStatus = [int]$_.Exception.Response.StatusCode }

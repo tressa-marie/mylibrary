@@ -190,9 +190,10 @@ dotnet ef database update --project backend/MyLibrary.Api
   below. It returns `201 Created`, the saved record (including `id`, `editionId`,
   and `createdAtUtc`), and a `Location` header. Each request creates a new owned
   copy, edition, and book in one transaction; duplicates are allowed.
-- `GET /api/library/books` returns an array of lightweight table summaries, or
+- `GET /api/library/books` returns an array of lightweight library summaries, or
   `[]` for an empty library. Each summary contains `id`, `title`, `author`,
-  `genres`, `isRead`, `rating`, `shelfId`, and `shelfLocation`. The database query
+  `genres`, `isRead`, `rating`, `shelfId`, `shelfLocation`, and `authorGender` for
+  the Stats page. The database query
   selects only these fields; descriptions and other detail fields are retrieved
   separately by ID. No Google Books request is made.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.

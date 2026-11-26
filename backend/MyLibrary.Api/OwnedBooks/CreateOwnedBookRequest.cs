@@ -81,8 +81,8 @@ public sealed class CreateOwnedBookRequest
             Error("sourceBookId", "Use a valid Google Books ID.");
         if (book.Isbn is { } isbn && !Regex.IsMatch(isbn, @"^(\d{13}|\d{9}[\dX])$"))
             Error("isbn", "Enter a 10- or 13-character ISBN, or leave it blank.");
-        if (book.AuthorGender is not (null or "male" or "female" or "other"))
-            Error("authorGender", "Choose male, female, or other, or leave it blank.");
+        if (book.AuthorGender is not (null or "male" or "female" or "unknown" or "non-binary" or "other"))
+            Error("authorGender", "Choose Man, Woman, Non-Binary, or Unknown.");
         if (book.Rating is { } rating && (!double.IsFinite(rating) || rating < 0 || rating > 5))
             Error("rating", "Rating must be between 0 and 5.");
         if (book.PublicationYear < 0) Error("publicationYear", "Publication year cannot be negative.");

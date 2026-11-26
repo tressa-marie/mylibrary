@@ -108,7 +108,7 @@ export class AddBook implements OnInit {
             coverUrl: saved.coverUrl,
             isbn: saved.isbn ?? '',
             format: saved.format ?? '',
-            authorGender: saved.authorGender ?? '',
+            authorGender: saved.authorGender === 'other' ? '' : (saved.authorGender ?? ''),
             rating: saved.rating,
             purchaseLocation: saved.purchaseLocation ?? '',
             shelfId: saved.shelfId,

@@ -77,7 +77,7 @@ public static class OwnedBookEndpoints
                 .Select(book => new LibraryBookSummary(
                     book.Id, book.EditionDetails.Book.Title, book.EditionDetails.Book.Author,
                     book.EditionDetails.Book.Genres, book.IsRead, book.Rating,
-                    book.ShelfId, book.ShelfLocation))
+                    book.ShelfId, book.ShelfLocation, book.EditionDetails.Book.AuthorGender))
                 .ToArrayAsync(ct)));
     }
 }

@@ -184,6 +184,7 @@ describe('Add book saving', () => {
   it('saves metadata once, clears an unread rating, and navigates only after success', async () => {
     await enterTitle('  My Book  ');
     fixture.componentInstance.book.author = 'An Author';
+    fixture.componentInstance.book.authorGender = 'unknown';
     const genre: HTMLInputElement = fixture.nativeElement.querySelector('#genre');
     genre.value = ' Fantasy ';
     genre.dispatchEvent(new Event('input'));
@@ -209,6 +210,7 @@ describe('Add book saving', () => {
     expect(request.request.body).toMatchObject({
       title: 'My Book',
       author: 'An Author',
+      authorGender: 'unknown',
       genres: ['Fantasy'],
       shelfId: 'shelf-1',
       shelfLocation: 'Favorites (Living room)',
