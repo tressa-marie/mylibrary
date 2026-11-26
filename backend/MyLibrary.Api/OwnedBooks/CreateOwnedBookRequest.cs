@@ -26,27 +26,35 @@ public sealed class CreateOwnedBookRequest
     private static string? Optional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    public OwnedBook ToEntity() => new()
+    public OwnedBook ToEntity()
     {
-        SourceBookId = Optional(SourceBookId),
-        Title = Title?.Trim() ?? "",
-        Author = Author?.Trim() ?? "",
-        Isbn = Optional(Isbn) is { } isbn ? Regex.Replace(isbn, @"[\s-]", "").ToUpperInvariant() : null,
-        Description = Optional(Description),
-        CoverUrl = Optional(CoverUrl),
-        Format = Optional(Format),
-        AuthorGender = Optional(AuthorGender),
-        IsRead = IsRead,
-        Rating = IsRead ? Rating : null,
-        PurchaseLocation = Optional(PurchaseLocation),
-        ShelfLocation = Optional(ShelfLocation),
-        ShelfId = ShelfId,
-        Genre = Optional(Genre),
-        PublicationYear = PublicationYear,
-        Publisher = Optional(Publisher),
-        Edition = Optional(Edition),
-        PageCount = PageCount,
-    };
+        var book = new OwnedBook();
+        ApplyTo(book);
+        return book;
+    }
+
+    // Only editable fields are copied; entity IDs and creation time are preserved.
+    public void ApplyTo(OwnedBook book)
+    {
+        book.SourceBookId = Optional(SourceBookId);
+        book.Title = Title?.Trim() ?? "";
+        book.Author = Author?.Trim() ?? "";
+        book.Isbn = Optional(Isbn) is { } isbn ? Regex.Replace(isbn, @"[\s-]", "").ToUpperInvariant() : null;
+        book.Description = Optional(Description);
+        book.CoverUrl = Optional(CoverUrl);
+        book.Format = Optional(Format);
+        book.AuthorGender = Optional(AuthorGender);
+        book.IsRead = IsRead;
+        book.Rating = IsRead ? Rating : null;
+        book.PurchaseLocation = Optional(PurchaseLocation);
+        book.ShelfLocation = Optional(ShelfLocation);
+        book.ShelfId = ShelfId;
+        book.Genre = Optional(Genre);
+        book.PublicationYear = PublicationYear;
+        book.Publisher = Optional(Publisher);
+        book.Edition = Optional(Edition);
+        book.PageCount = PageCount;
+    }
 
     public static Dictionary<string, string[]> Validate(OwnedBook book)
     {

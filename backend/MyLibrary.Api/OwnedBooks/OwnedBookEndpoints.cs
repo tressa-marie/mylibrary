@@ -15,15 +15,22 @@ public static class OwnedBookEndpoints
     private static IQueryable<OwnedBook> LibraryBooks(LibraryDbContext db) =>
         db.OwnedBooks.AsNoTracking().Include(x => x.EditionDetails).ThenInclude(x => x.Book);
 
+    private static async Task<Dictionary<string, string[]>> ValidateAsync(
+        OwnedBook book, LibraryDbContext db, CancellationToken ct)
+    {
+        var errors = CreateOwnedBookRequest.Validate(book);
+        if (book.ShelfId is { } shelfId && !await db.Shelves.AnyAsync(x => x.Id == shelfId, ct))
+            errors["shelfId"] = ["Choose an existing shelf, or leave it blank."];
+        return errors;
+    }
+
     private static void MapRoutes(WebApplication app, string path)
     {
         var group = app.MapGroup(path);
         group.MapPost("", async (CreateOwnedBookRequest request, LibraryDbContext db, CancellationToken ct) =>
         {
             var book = request.ToEntity();
-            var errors = CreateOwnedBookRequest.Validate(book);
-            if (book.ShelfId is { } shelfId && !await db.Shelves.AnyAsync(x => x.Id == shelfId, ct))
-                errors["shelfId"] = ["Choose an existing shelf, or leave it blank."];
+            var errors = await ValidateAsync(book, db, ct);
             if (errors.Count > 0) return Results.ValidationProblem(errors);
             db.OwnedBooks.Add(book);
             try
@@ -36,6 +43,28 @@ public static class OwnedBookEndpoints
                 app.Logger.LogError(ex, "Could not save an owned book.");
                 return Results.Problem(statusCode: 500, title: "Unable to save book",
                     detail: "Your book could not be saved. Please try again.");
+            }
+        });
+        group.MapPut("/{id:guid}", async (Guid id, CreateOwnedBookRequest request, LibraryDbContext db, CancellationToken ct) =>
+        {
+            var book = await db.OwnedBooks.Include(x => x.EditionDetails).ThenInclude(x => x.Book)
+                .SingleOrDefaultAsync(x => x.Id == id, ct);
+            if (book is null) return Results.NotFound();
+
+            // Validate before changing any tracked work, edition, or owned-copy data.
+            var errors = await ValidateAsync(request.ToEntity(), db, ct);
+            if (errors.Count > 0) return Results.ValidationProblem(errors);
+            request.ApplyTo(book);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return Results.Ok(book);
+            }
+            catch (DbUpdateException ex)
+            {
+                app.Logger.LogError(ex, "Could not update an owned book.");
+                return Results.Problem(statusCode: 500, title: "Unable to update book",
+                    detail: "Your book could not be updated. Please try again.");
             }
         });
         group.MapGet("/{id:guid}", async (Guid id, LibraryDbContext db, CancellationToken ct) =>

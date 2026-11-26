@@ -190,6 +190,14 @@ dotnet ef database update --project backend/MyLibrary.Api
 - `GET /api/library/books` returns an array of saved records, or `[]` for an empty
   library. It reads persisted metadata without calling Google Books.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.
+- `PUT /api/library/books/{id}` replaces the editable fields of an existing
+  record using the same JSON shape and validation as POST. It returns `200` with
+  the updated record, `400` with field errors for invalid data, or `404` if the
+  library book does not exist. IDs and `createdAtUtc` are preserved. Send the
+  complete desired state: omitted optional fields are cleared, author defaults
+  to an empty string, and `isRead` defaults to false (clearing rating). `shelfId`
+  can assign, move, or unassign a book; it must reference an existing shelf or
+  be null. Work, edition, and ownership updates save together in one transaction.
 - `/api/owned-books` supports the same operations for the existing frontend.
 
 Example, with the API running:

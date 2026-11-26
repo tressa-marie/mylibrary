@@ -107,7 +107,91 @@ try {
             'genre', 'shelfLocation')) {
         Assert-True ($reloaded.$field -eq $saved.$field) "Persisted $field must survive restarting the API."
     }
-    Write-Output 'PASS: save, normalization, validation, manual entry, listing, missing records, and persistence.'
+    $firstShelf = Invoke-RestMethod "$baseUrl/api/shelves" -Method Post -ContentType 'application/json' `
+        -Body (@{ name = 'Study shelf' } | ConvertTo-Json)
+    $secondShelf = Invoke-RestMethod "$baseUrl/api/shelves" -Method Post -ContentType 'application/json' `
+        -Body (@{ name = 'Living room shelf' } | ConvertTo-Json)
+    $updatePayload = @{
+        title = ' Updated Library Book '; author = ' Updated Author '; sourceBookId = 'updated-volume'
+        isbn = '0-8044-2957-X'; description = ' Updated description '; coverUrl = '/api/books/updated-volume/cover'
+        format = ' Hardcover '; authorGender = 'female'; isRead = $true; rating = 4.5
+        purchaseLocation = ' New store '; publicationYear = 2024; publisher = ' New publisher '
+        edition = ' Second '; pageCount = 300; genre = ' Mystery '; shelfLocation = ' Study shelf '
+        shelfId = $firstShelf.id
+        # Server-controlled fields must not be overwritten by request JSON.
+        id = [guid]::NewGuid(); editionId = [guid]::NewGuid(); createdAtUtc = '2000-01-01T00:00:00Z'
+    }
+    $updateResponse = Invoke-WebRequest "$baseUrl/api/library/books/$($saved.id)" -Method Put `
+        -ContentType 'application/json' -Body ($updatePayload | ConvertTo-Json) -UseBasicParsing
+    Assert-True ($updateResponse.StatusCode -eq 200) 'A valid PUT must return 200.'
+    $updated = $updateResponse.Content | ConvertFrom-Json
+    Assert-True ($updated.id -eq $saved.id -and $updated.editionId -eq $saved.editionId `
+        -and $updated.createdAtUtc -eq $saved.createdAtUtc) 'PUT must preserve IDs and creation time.'
+    Assert-True ($updated.title -eq 'Updated Library Book' -and $updated.author -eq 'Updated Author') 'Updated work fields must be normalized.'
+    Assert-True ($updated.description -eq 'Updated description' -and $updated.genre -eq 'Mystery' `
+        -and $updated.authorGender -eq 'female') 'All work fields must update.'
+    Assert-True ($updated.isbn -eq '080442957X' -and $updated.sourceBookId -eq 'updated-volume' `
+        -and $updated.coverUrl -eq '/api/books/updated-volume/cover') 'Provider and ISBN fields must update.'
+    Assert-True ($updated.format -eq 'Hardcover' -and $updated.publisher -eq 'New publisher' `
+        -and $updated.publicationYear -eq 2024 -and $updated.edition -eq 'Second' `
+        -and $updated.pageCount -eq 300) 'All edition fields must update.'
+    Assert-True ($updated.isRead -and $updated.rating -eq 4.5 -and $updated.purchaseLocation -eq 'New store' `
+        -and $updated.shelfLocation -eq 'Study shelf' -and $updated.shelfId -eq $firstShelf.id) 'Ownership fields must update.'
+    $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($firstShelf.id)"
+    Assert-True ($shelf.bookIds -contains $saved.id) 'PUT must assign the book to its shelf.'
+
+    $updatePayload.shelfId = $secondShelf.id
+    $updated = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)" -Method Put `
+        -ContentType 'application/json' -Body ($updatePayload | ConvertTo-Json)
+    $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($firstShelf.id)"
+    Assert-True ($shelf.bookIds.Count -eq 0) 'Changing shelf must remove the old assignment.'
+    $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($secondShelf.id)"
+    Assert-True ($shelf.bookIds -contains $saved.id) 'Changing shelf must create the new assignment.'
+
+    foreach ($invalid in @(@{ title = ' ' }, @{ title = 'Invalid'; isRead = $true; rating = 6 },
+            @{ title = 'Invalid'; isbn = 'bad' }, @{ title = 'Invalid'; pageCount = -1 },
+            @{ title = 'Invalid'; publicationYear = -1 }, @{ title = 'Invalid'; shelfId = [guid]::NewGuid() },
+            @{ title = 'Invalid'; genre = ('x' * 101) }, @{ title = 'Invalid'; shelfLocation = ('x' * 501) },
+            @{ title = 'Invalid'; sourceBookId = 'bad id' }, @{ title = 'Invalid'; coverUrl = 'https://example.com/cover' })) {
+        $status = 0
+        try {
+            Invoke-WebRequest "$baseUrl/api/library/books/$($saved.id)" -Method Put -ContentType 'application/json' `
+                -Body ($invalid | ConvertTo-Json) -UseBasicParsing | Out-Null
+        } catch { $status = [int]$_.Exception.Response.StatusCode }
+        Assert-True ($status -eq 400) 'Invalid PUT data must return 400.'
+        $unchanged = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
+        Assert-True (($unchanged | ConvertTo-Json -Compress) -eq ($updated | ConvertTo-Json -Compress)) `
+            'Rejected updates must not change any persisted fields.'
+    }
+    $status = 0
+    try {
+        Invoke-WebRequest "$baseUrl/api/library/books/$([guid]::NewGuid())" -Method Put -ContentType 'application/json' `
+            -Body ($updatePayload | ConvertTo-Json) -UseBasicParsing | Out-Null
+    } catch { $status = [int]$_.Exception.Response.StatusCode }
+    Assert-True ($status -eq 404) 'PUT for a missing book must return 404.'
+    $other = Invoke-RestMethod "$baseUrl/api/library/books/$($manual.id)"
+    Assert-True ($other.title -eq 'Manual Book' -and $other.rating -eq 5) 'Updating a book must not change other copies.'
+
+    $cleared = Invoke-RestMethod "$baseUrl/api/owned-books/$($saved.id)" -Method Put -ContentType 'application/json' `
+        -Body (@{ title = 'Minimal update'; isRead = $false; rating = 5 } | ConvertTo-Json)
+    foreach ($field in @('sourceBookId', 'isbn', 'description', 'coverUrl', 'format', 'authorGender', 'rating',
+            'purchaseLocation', 'shelfLocation', 'shelfId', 'genre', 'publicationYear', 'publisher', 'edition', 'pageCount')) {
+        Assert-True ($null -eq $cleared.$field) "Omitted optional field $field must be cleared by PUT."
+    }
+    Assert-True ($cleared.author -eq '' -and -not $cleared.isRead) 'PUT defaults must replace editable fields.'
+    $shelf = Invoke-RestMethod "$baseUrl/api/shelves/$($secondShelf.id)"
+    Assert-True ($shelf.bookIds.Count -eq 0) 'Clearing shelfId must remove shelf membership.'
+
+    $updated = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)" -Method Put -ContentType 'application/json' `
+        -Body ($updatePayload | ConvertTo-Json)
+    Stop-TestApi
+    Start-TestApi
+    $reloaded = Invoke-RestMethod "$baseUrl/api/library/books/$($saved.id)"
+    Assert-True (($reloaded | ConvertTo-Json -Compress) -eq ($updated | ConvertTo-Json -Compress)) `
+        'All updated metadata and ownership fields must survive restart.'
+    $library = Invoke-RestMethod "$baseUrl/api/library/books"
+    Assert-True ($library.Count -eq 2) 'PUT must not insert duplicate library books.'
+    Write-Output 'PASS: create, update, normalization, validation, shelf moves/removal, immutable IDs, missing records, and persistence.'
 } finally {
     Stop-TestApi
     # Only files created inside this unique temporary directory are removed.
