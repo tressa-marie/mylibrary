@@ -52,11 +52,13 @@ export class Stats implements OnInit {
       .map((group, index) => ({ ...group, color: colors[index % colors.length] }));
   });
   protected readonly readingStatuses = computed(() => {
-    const read = this.books().filter((book) => book.isRead).length;
+    const dnf = this.books().filter((book) => book.isDnf).length;
+    const read = this.books().filter((book) => book.isRead && !book.isDnf).length;
     const total = this.libraryTotal();
     return [
       { label: 'Read', value: 'read', color: '#254d3c', count: read },
-      { label: 'Unread', value: 'unread', color: '#bf4d38', count: total - read },
+      { label: 'Unread', value: 'unread', color: '#bf4d38', count: total - read - dnf },
+      { label: 'Did not finish', value: 'dnf', color: '#ba8732', count: dnf },
     ].map((group) => ({
       ...group,
       percentage: total ? (group.count / total) * 100 : 0,

@@ -86,11 +86,18 @@
         <input matInput id="isbn" name="isbn" type="text" [(ngModel)]="book.isbn" />
       </mat-form-field>
     </div>
-    <div class="form-line-group">
-      <div>
-        <mat-checkbox id="is-read" name="isRead" [(ngModel)]="isRead"
+    <div class="form-line-group reading-status-row">
+      <div class="reading-choices" role="group" aria-label="Reading status">
+        <mat-checkbox
+          id="is-read"
+          name="isRead"
+          [ngModel]="isRead && !isDnf"
+          (ngModelChange)="setRead($event)"
           >Have you read this book?</mat-checkbox
         >
+        <mat-checkbox id="is-dnf" name="isDnf" [ngModel]="isDnf" (ngModelChange)="setDnf($event)">
+          Did not finish
+        </mat-checkbox>
       </div>
       <div>
         <mat-form-field appearance="outline">
@@ -108,7 +115,7 @@
         </mat-form-field>
       </div>
     </div>
-    <div>
+    <div class="description-field">
       <mat-form-field appearance="outline">
         <mat-label>Description</mat-label>
         <textarea

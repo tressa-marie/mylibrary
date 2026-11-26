@@ -69,15 +69,18 @@
     }
   </section>
   <section class="chart-card" aria-labelledby="reading-heading">
-    <h2 id="reading-heading">Read and unread books</h2>
-    <p id="reading-description">Your reading progress across all books in your library.</p>
+    <h2 id="reading-heading">Read, unread, and did not finish</h2>
+    <p id="reading-description">
+      Your reading progress across all books in your library. Did not finish books count separately
+      from read books.
+    </p>
     @if (libraryTotal()) {
       <div class="chart-layout">
         <div class="chart-container">
           <canvas
             #readingChart
             role="img"
-            aria-label="Pie chart of read and unread books"
+            aria-label="Pie chart of read, unread, and did not finish books"
             aria-describedby="reading-description reading-table"
           ></canvas>
         </div>

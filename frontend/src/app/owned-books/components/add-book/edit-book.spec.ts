@@ -24,6 +24,11 @@ describe('Edit library book', () => {
     format: 'Paperback',
     authorGender: 'female',
     isRead: true,
+    isDnf: false,
+    wantToSell: true,
+    bookCost: 12.99,
+    dateAcquired: '2026-01-01',
+    dateRead: '2026-02-01',
     rating: 4.5,
     purchaseLocation: 'Bookshop',
     shelfId: 'shelf-1',
@@ -146,6 +151,37 @@ describe('Edit library book', () => {
     harness.detectChanges();
     expect(element().querySelector('h1')!.textContent).toBe('Edited Title');
   });
+
+  for (const target of ['unchanged', 'is-read', 'is-dnf']) {
+    it(`loads only the DNF checkbox for a DNF book and saves ${target} status`, async () => {
+      await harness.navigateByUrl(url);
+      http.expectOne('/api/shelves').flush(shelves);
+      http.expectOne(`/api/library/books/${id}`).flush({ ...saved, isDnf: true });
+      await harness.fixture.whenStable();
+      const read = element().querySelector<HTMLInputElement>('#is-read input')!;
+      const dnf = element().querySelector<HTMLInputElement>('#is-dnf input')!;
+      expect(read.checked).toBe(false);
+      expect(dnf.checked).toBe(true);
+      if (target !== 'unchanged') {
+        element().querySelector<HTMLInputElement>(`#${target} input`)!.click();
+        await harness.fixture.whenStable();
+      }
+      saveButton().click();
+      const request = http.expectOne(`/api/library/books/${id}`);
+      expect(request.request.body).toMatchObject({
+        isRead: target !== 'is-dnf',
+        isDnf: target === 'unchanged',
+        wantToSell: true,
+        bookCost: 12.99,
+        dateAcquired: '2026-01-01',
+        dateRead: '2026-02-01',
+      });
+      request.flush({}, { status: 503, statusText: 'Unavailable' });
+      await harness.fixture.whenStable();
+      expect(read.checked).toBe(target === 'is-read');
+      expect(dnf.checked).toBe(target === 'unchanged');
+    });
+  }
 
   it('preserves edited input and selected shelf after a failed save, then permits retry', async () => {
     await openEdit();

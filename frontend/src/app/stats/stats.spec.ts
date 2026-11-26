@@ -132,7 +132,7 @@ describe('Stats', () => {
       fixture.nativeElement.querySelector('[aria-label="Pie chart of books by author gender"]'),
     ).toBeNull();
     expect(chartMock).toHaveBeenCalledOnce();
-    expect(chartMock.mock.calls[0][1].data.labels).toEqual(['Read', 'Unread']);
+    expect(chartMock.mock.calls[0][1].data.labels).toEqual(['Read', 'Unread', 'Did not finish']);
   });
 
   it('shows an empty state without creating a chart', async () => {
@@ -156,6 +156,32 @@ describe('Stats', () => {
     expect(chartMock).toHaveBeenCalledTimes(2);
   });
 
+  it('counts DNF separately from read and unread, including older inconsistent flags', async () => {
+    http.expectOne('/api/library/books').flush([
+      { isRead: true, isDnf: false },
+      { isRead: true, isDnf: true },
+      { isRead: false, isDnf: true },
+      { isRead: false, isDnf: null },
+    ]);
+    await fixture.whenStable();
+    const config = chartMock.mock.calls[0][1];
+    expect(config.data.labels).toEqual(['Read', 'Unread', 'Did not finish']);
+    expect(config.data.datasets[0].data).toEqual([1, 1, 2]);
+    const rows = Array.from(
+      fixture.nativeElement.querySelectorAll('#reading-table tbody tr') as NodeListOf<HTMLElement>,
+    );
+    expect(rows.map((row) => row.querySelector('td')?.textContent?.trim())).toEqual([
+      '1',
+      '1',
+      '2',
+    ]);
+    expect(rows.map((row) => row.lastElementChild?.textContent?.trim())).toEqual([
+      '25%',
+      '25%',
+      '50%',
+    ]);
+  });
+
   for (const statuses of [
     [true, false, false, false],
     [true, true],
@@ -169,9 +195,9 @@ describe('Stats', () => {
       expect(chartMock).toHaveBeenCalledOnce();
       const config = chartMock.mock.calls[0][1];
       expect(config).toMatchObject({ type: 'pie' });
-      expect(config.data.labels).toEqual(['Read', 'Unread']);
+      expect(config.data.labels).toEqual(['Read', 'Unread', 'Did not finish']);
       const read = statuses.filter(Boolean).length;
-      expect(config.data.datasets[0].data).toEqual([read, statuses.length - read]);
+      expect(config.data.datasets[0].data).toEqual([read, statuses.length - read, 0]);
       const rows = Array.from(
         fixture.nativeElement.querySelectorAll(
           '#reading-table tbody tr',

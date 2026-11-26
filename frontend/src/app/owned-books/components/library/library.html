@@ -183,9 +183,12 @@
                     }
                   </td>
                   <td>
-                    <span class="read-status" [class.read]="book.isRead">{{
-                      book.isRead ? 'Read' : 'Unread'
-                    }}</span>
+                    <span
+                      class="read-status"
+                      [class.read]="book.isRead && !book.isDnf"
+                      [class.dnf]="book.isDnf"
+                      >{{ book.isDnf ? 'DNF' : book.isRead ? 'Read' : 'Unread' }}</span
+                    >
                   </td>
                   <td>
                     @if (book.isRead && book.rating !== null) {

@@ -44,6 +44,10 @@ export class AddBook implements OnInit {
   readonly editLoadError = signal('');
   private originalShelfLocation: string | null = null;
   private originalShelfId: string | null = null;
+  private savedTracking: Pick<
+    CreateOwnedBookRequest,
+    'wantToSell' | 'bookCost' | 'dateAcquired' | 'dateRead'
+  > = {};
   private readonly shelfService = inject(ShelfService);
   readonly shelves = signal<Shelf[]>([]);
   readonly shelfState = signal<'loading' | 'ready' | 'error'>('loading');
@@ -56,6 +60,7 @@ export class AddBook implements OnInit {
   genreDraft = '';
 
   isRead = false;
+  isDnf = false;
   coverFailed = false;
   bookId: string | null = null;
 
@@ -118,7 +123,14 @@ export class AddBook implements OnInit {
             edition: saved.edition ?? '',
             pageCount: saved.pageCount,
           };
-          this.isRead = saved.isRead;
+          this.isDnf = saved.isDnf === true;
+          this.isRead = saved.isRead || this.isDnf;
+          this.savedTracking = {
+            wantToSell: saved.wantToSell,
+            bookCost: saved.bookCost,
+            dateAcquired: saved.dateAcquired,
+            dateRead: saved.dateRead,
+          };
           this.bookId = saved.sourceBookId;
           this.originalShelfLocation = saved.shelfLocation;
           this.originalShelfId = saved.shelfId;
@@ -133,6 +145,16 @@ export class AddBook implements OnInit {
               : 'Book details could not be loaded. Please try again.',
           ),
       });
+  }
+
+  setRead(checked: boolean) {
+    this.isRead = checked;
+    this.isDnf = false;
+  }
+
+  setDnf(checked: boolean) {
+    this.isDnf = checked;
+    this.isRead = checked;
   }
 
   loadShelves() {
@@ -205,6 +227,7 @@ export class AddBook implements OnInit {
     const optional = (value: string | null) => value?.trim() || null;
     const shelf = this.shelves().find((shelf) => shelf.id === this.book.shelfId);
     const request: CreateOwnedBookRequest = {
+      ...this.savedTracking,
       sourceBookId: optional(this.bookId),
       title: this.book.title.trim(),
       author: this.book.author.trim(),
@@ -214,6 +237,7 @@ export class AddBook implements OnInit {
       format: optional(this.book.format),
       authorGender: optional(this.book.authorGender),
       isRead: this.isRead,
+      isDnf: this.isDnf,
       rating: this.isRead ? this.book.rating : null,
       purchaseLocation: optional(this.book.purchaseLocation),
       shelfId: this.book.shelfId,
@@ -249,8 +273,9 @@ export class AddBook implements OnInit {
           this.book = new OwnedBook();
           this.bookId = null;
           this.isRead = false;
+          this.isDnf = false;
           this.coverFailed = false;
-          form.resetForm({ ...this.book, isRead: false });
+          form.resetForm({ ...this.book, isRead: false, isDnf: false });
           void this.router.navigate(['/']);
         },
         error: (error: HttpErrorResponse) => {

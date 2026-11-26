@@ -253,6 +253,13 @@ costs return 400. These values are stored independently of `isRead` and `rating`
 The `AddOwnedBookTrackingFields` migration adds nullable columns and is applied
 automatically on Development startup.
 
+Add Book and Edit Book show mutually exclusive Read and Did not finish checkboxes.
+Read saves `isRead: true, isDnf: false`; Did not finish saves both flags as true;
+leaving both unchecked saves both flags as false. The Stats reading chart counts
+DNF books separately from Read and Unread, so each copy appears in one category.
+Other tracking fields are preserved when editing, even though their form inputs
+are not yet available.
+
 `AddGenreAndShelfLocation` adds nullable fields so existing books remain compatible.
 `AddBookGenres` converts an existing genre into a one-item array and missing
 genres into empty arrays. Add Book and Edit Book use removable genre pills:
