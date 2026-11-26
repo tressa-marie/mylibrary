@@ -250,7 +250,7 @@ Responses also include `bookIds`, derived from the saved library copies assigned
 to the shelf. A book can belong to one shelf or have no shelf. These use library
 copy IDs (`OwnedBook.Id`), rather than Google Books, work, or edition IDs.
 Shelves currently belong to the single local library; per-user isolation awaits
-authentication. Open **Shelves** in the top navigation (`/shelves`) to see saved
+authentication. Click the profile picture and choose **Manage Shelves** (`/shelves`) to see saved
 shelves and book counts. **Add Shelf** opens a modal with name, room, and
 description fields. It closes automatically after a successful save and refreshes
 the list; failed saves keep the form entries available for retry.

@@ -13,10 +13,22 @@
       >Library</a
     >
     <a routerLink="/search" routerLinkActive="active" ariaCurrentWhenActive="page">Search books</a>
-    <a routerLink="/shelves" routerLinkActive="active" ariaCurrentWhenActive="page">Shelves</a>
   </nav>
-  <div id="profile-img">
-    <img src="assets/puck.png" alt="Profile picture" />
+  <div class="profile-summary">
+    <span class="book-count" role="status" title="Total books in your library"
+      >{{ totalBooks() ?? '-' }} {{ totalBooks() === 1 ? 'book' : 'books' }}</span
+    >
+    <button
+      id="profile-img"
+      type="button"
+      [matMenuTriggerFor]="profileMenu"
+      aria-label="Open profile menu"
+    >
+      <img src="assets/puck.png" alt="Profile picture" />
+    </button>
+    <mat-menu #profileMenu="matMenu" xPosition="before">
+      <a mat-menu-item routerLink="/shelves">Manage Shelves</a>
+    </mat-menu>
   </div>
 </header>
 <main id="main-content" tabindex="-1">

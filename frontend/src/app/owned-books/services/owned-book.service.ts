@@ -1,13 +1,18 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { CreateOwnedBookRequest, SavedOwnedBook } from '../models/owned-book-api';
+import { tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class OwnedBookService {
   private readonly http = inject(HttpClient);
+  private readonly bookCount = signal<number | null>(null);
+  readonly totalBooks = this.bookCount.asReadonly();
 
   list() {
-    return this.http.get<SavedOwnedBook[]>('/api/library/books');
+    return this.http
+      .get<SavedOwnedBook[]>('/api/library/books')
+      .pipe(tap((books) => this.bookCount.set(books.length)));
   }
 
   get(id: string) {
@@ -15,7 +20,9 @@ export class OwnedBookService {
   }
 
   create(book: CreateOwnedBookRequest) {
-    return this.http.post<SavedOwnedBook>('/api/library/books', book);
+    return this.http
+      .post<SavedOwnedBook>('/api/library/books', book)
+      .pipe(tap(() => this.bookCount.update((count) => (count === null ? null : count + 1))));
   }
 
   update(id: string, book: CreateOwnedBookRequest) {
