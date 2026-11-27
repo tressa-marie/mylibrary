@@ -16,6 +16,10 @@ const GENRE_COLORS = new Map<string, string>([
   ['non-fiction', '#7e7e7e'],
 ]);
 
+export function genreColor(genre: string): string {
+  return GENRE_COLORS.get(genre.trim().toLowerCase()) ?? '#959595';
+}
+
 @Directive({
   selector: '[appGenreColor]',
   host: {
@@ -25,12 +29,8 @@ const GENRE_COLORS = new Map<string, string>([
 })
 export class GenreColor {
   readonly appGenreColor = input.required<string>();
-  protected readonly background = computed(
-    () => GENRE_COLORS.get(this.appGenreColor().trim().toLowerCase()) ?? '#959595',
-  );
+  protected readonly background = computed(() => genreColor(this.appGenreColor()));
   protected readonly textColor = computed(() =>
-    ['#E09F3E', '#959595'].includes(this.background())
-      ? '#000000'
-      : '#FFFFFF',
+    ['#E09F3E', '#959595'].includes(this.background()) ? '#000000' : '#FFFFFF',
   );
 }

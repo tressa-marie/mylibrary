@@ -50,6 +50,7 @@ describe('Stats', () => {
     const config = chartMock.mock.calls.find(([, config]) => config.type === 'bar')![1];
     expect(config.data.labels).toEqual(['Fantasy', 'Romance', 'Science Fiction']);
     expect(config.data.datasets[0].data).toEqual([3, 2, 1]);
+    expect(config.data.datasets[0].backgroundColor).toEqual(['#7c23a0', '#B6468F', '#828C23']);
     expect(config.options).toMatchObject({
       indexAxis: 'y',
       scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },

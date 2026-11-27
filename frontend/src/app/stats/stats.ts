@@ -15,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OwnedBookService } from '../owned-books/services/owned-book.service';
 import { LibraryBookSummary } from '../owned-books/models/owned-book-api';
 import { CHART } from '../shared/charts/chart';
+import { genreColor } from '../shared/genre-color';
 
 @Component({
   selector: 'app-stats',
@@ -46,10 +47,9 @@ export class Stats implements OnInit {
         else counts.set(key, { label, count: 1 });
       }
     }
-    const colors = ['#254d3c', '#bf4d38', '#77639c', '#ba8732', '#48838c', '#a55e7d', '#718253'];
     return [...counts.values()]
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-      .map((group, index) => ({ ...group, color: colors[index % colors.length] }));
+      .map((group) => ({ ...group, color: genreColor(group.label) }));
   });
   protected readonly readingStatuses = computed(() => {
     const dnf = this.books().filter((book) => book.isDnf).length;
