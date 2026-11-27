@@ -11,9 +11,10 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { LibraryBookSummary } from '../../models/owned-book-api';
+import { LibraryBookSummary, SavedOwnedBook } from '../../models/owned-book-api';
 import { OwnedBookService } from '../../services/owned-book.service';
 import { GenreColor } from '../../../shared/genre-color';
+import { MarkReadDialog } from './mark-read-dialog';
 
 type SortField = 'title' | 'author' | 'shelfLocation' | 'rating';
 type FilterKey = 'genre' | 'read' | 'shelf';
@@ -21,7 +22,7 @@ type FilterSelections = Record<FilterKey, string[]>;
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, FormsModule, GenreColor],
+  imports: [RouterLink, FormsModule, GenreColor, MarkReadDialog],
   templateUrl: './library.html',
   styleUrl: './library.scss',
 })
@@ -30,6 +31,7 @@ export class Library implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly books = signal<LibraryBookSummary[]>([]);
+  protected readonly readMessage = signal('');
   protected readonly pageSize = signal(25);
   protected readonly pageIndex = signal(0);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -121,6 +123,16 @@ export class Library implements OnInit {
 
   ngOnInit() {
     this.loadBooks();
+  }
+
+  protected onBookRead(saved: SavedOwnedBook) {
+    this.books.update((books) =>
+      books.map((book) =>
+        book.id === saved.id ? { ...book, ...saved, genres: saved.genres ?? [] } : book,
+      ),
+    );
+    this.pageIndex.set(Math.min(this.pageIndex(), this.pageCount() - 1));
+    this.readMessage.set(`${saved.title || 'Your book'} was marked as read.`);
   }
 
   private filterValue(value: string | null | undefined) {

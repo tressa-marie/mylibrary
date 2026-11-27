@@ -197,6 +197,15 @@ dotnet ef database update --project backend/MyLibrary.Api
   selects only these fields; descriptions and other detail fields are retrieved
   separately by ID. No Google Books request is made.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.
+- `PATCH /api/library/books/{id}/read` marks a book read. Send `{}` for Skip,
+  preserving its stored rating, or `{ "rating": 4.5 }` to set a rating from 0 to 5.
+  It returns the updated book, `400` for an invalid rating, or `404` if missing.
+  This action also updates `dateRead` to today; the browser sends its local
+  `YYYY-MM-DD` date as `dateRead`, with the API's local today as a fallback when omitted.
+  Other fields are preserved. Adding a book or editing its read status never
+  automatically sets or replaces its read date. The unread-book icon opens a small rating modal;
+  Cancel closes it without sending an update. Successful saves refresh the row
+  while preserving table filters and sorting.
 - `PUT /api/library/books/{id}` replaces the editable fields of an existing
   record using the same JSON shape and validation as POST. It returns `200` with
   the updated record, `400` with field errors for invalid data, or `404` if the

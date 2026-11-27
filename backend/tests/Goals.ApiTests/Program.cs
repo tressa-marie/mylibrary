@@ -56,6 +56,7 @@ var connectionString = builder.Configuration["GoalsTest:ConnectionString"]
     ?? throw new InvalidOperationException("Set GoalsTest__ConnectionString to a PostgreSQL test database connection string.");
 // Only this unique schema is migrated and removed; existing library tables are untouched.
 var schema = "goals_test_" + Guid.NewGuid().ToString("N");
+Console.WriteLine($"Using isolated test schema: {schema}");
 var scopedConnection = new NpgsqlConnectionStringBuilder(connectionString) { SearchPath = schema };
 var schemaInterceptor = new TestSchemaInterceptor(schema);
 builder.Services.AddDbContext<LibraryDbContext>(options => options.UseNpgsql(scopedConnection.ConnectionString).AddInterceptors(schemaInterceptor));
@@ -113,6 +114,51 @@ try
     Check(summary["pageCount"]!.GetValue<int>() == 321
         && summary["dateRead"]!.GetValue<string>() == "2026-01-15"
         && summary["dateAcquired"]!.GetValue<string>() == "2026-01-01", "Library summary is missing goal progress data.");
+    Guid unreadId;
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+        var legacyUnread = new OwnedBook { Title = "Unread rating fixture", Author = "Test author", IsRead = false, Rating = 4.5,
+            PageCount = 123, PurchaseLocation = "Test shop", DateAcquired = new DateOnly(2026, 1, 2), DateRead = new DateOnly(2020, 1, 1), Genres = ["Fantasy"] };
+        db.OwnedBooks.Add(legacyUnread);
+        await db.SaveChangesAsync();
+        unreadId = legacyUnread.Id;
+    }
+    var readPath = $"/api/library/books/{unreadId}";
+    var originalUnread = await Request(HttpMethod.Get, readPath, null, HttpStatusCode.OK);
+    foreach (var invalidRating in new[] { -1, 6 })
+        await Request(HttpMethod.Patch, readPath + "/read", new { rating = invalidRating }, HttpStatusCode.BadRequest);
+    Check(JsonNode.DeepEquals(originalUnread, await Request(HttpMethod.Get, readPath, null, HttpStatusCode.OK)), "Invalid rating changed the book.");
+    var skippedRead = await Request(HttpMethod.Patch, readPath + "/read", new { dateRead = "2026-11-27" }, HttpStatusCode.OK);
+    var expectedSkip = originalUnread!.DeepClone();
+    expectedSkip["isRead"] = true;
+    expectedSkip["dateRead"] = "2026-11-27";
+    Check(JsonNode.DeepEquals(expectedSkip, skippedRead), "Skip must update isRead and dateRead while preserving the existing rating and other fields.");
+    Check(JsonNode.DeepEquals(expectedSkip, await Request(HttpMethod.Get, readPath, null, HttpStatusCode.OK)), "Skip was not persisted.");
+    foreach (var rating in new[] { 0.0, 3.75, 5.0 })
+    {
+        var ratedRead = await Request(HttpMethod.Patch, readPath + "/read", new { rating, dateRead = "2026-11-28" }, HttpStatusCode.OK);
+        expectedSkip["rating"] = rating;
+        expectedSkip["dateRead"] = "2026-11-28";
+        Check(JsonNode.DeepEquals(expectedSkip, ratedRead), "Rating submission changed unrelated fields.");
+        Check(JsonNode.DeepEquals(ratedRead, await Request(HttpMethod.Get, readPath, null, HttpStatusCode.OK)), "Submitted rating was not persisted.");
+    }
+    await Request(HttpMethod.Patch, $"/api/library/books/{Guid.NewGuid()}/read", new { }, HttpStatusCode.NotFound);
+    var fallbackDate = await Request(HttpMethod.Patch, readPath + "/read", new { }, HttpStatusCode.OK);
+    Check(fallbackDate!["dateRead"]!.GetValue<string>() == DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd"), "Missing action date must default to today.");
+    var addedRead = await Request(HttpMethod.Post, "/api/library/books", new { title = "Added as read", isRead = true }, HttpStatusCode.Created);
+    Check(addedRead!["dateRead"] is null, "Adding a read book must not automatically set a read date.");
+    var addedUnread = await Request(HttpMethod.Post, "/api/library/books", new { title = "Edited to read", isRead = false, dateRead = "2020-02-02" }, HttpStatusCode.Created);
+    var editedRead = await Request(HttpMethod.Put, $"/api/library/books/{addedUnread!["id"]}", new { title = "Edited to read", isRead = true, dateRead = "2020-02-02" }, HttpStatusCode.OK);
+    Check(editedRead!["dateRead"]!.GetValue<string>() == "2020-02-02", "Editing read status must not replace the supplied read date with today.");
+    var editedWithoutDate = await Request(HttpMethod.Put, $"/api/library/books/{addedRead["id"]}", new { title = "Added as read", isRead = true }, HttpStatusCode.OK);
+    Check(editedWithoutDate!["dateRead"] is null, "Editing a read book must not automatically set a read date.");
+    Console.WriteLine("PASS: book-icon Skip/Submit update read date; Add/Edit never auto-date read status; rating and metadata preservation verified.");
+    if (args.Contains("--books-only"))
+    {
+        await app.StopAsync();
+        return;
+    }
     Check((await Request(HttpMethod.Get, route, null, HttpStatusCode.OK))!.AsArray().Count == 0, "Initial list is not empty.");
     var saved = new List<JsonNode>();
     foreach (var type in Enum.GetNames<GoalType>())
@@ -208,7 +254,8 @@ try
         {
             Check(responses.Count(x => x.StatusCode == HttpStatusCode.Created) == 1
                 && responses.Count(x => x.StatusCode == HttpStatusCode.Conflict) == 1,
-                "Concurrent creates must produce one goal and one conflict.");
+                "Concurrent creates must produce one goal and one conflict; got " + string.Join(", ", responses.Select(x => (int)x.StatusCode)) + ". " +
+                string.Join(" ", await Task.WhenAll(responses.Select(x => x.Content.ReadAsStringAsync()))));
             var conflict = JsonNode.Parse(await responses.Single(x => x.StatusCode == HttpStatusCode.Conflict).Content.ReadAsStringAsync())!;
             Check(conflict["errors"]!["goalType"] is not null, "Race conflict did not return the goal type error.");
             var newGoal = JsonNode.Parse(await responses.Single(x => x.StatusCode == HttpStatusCode.Created).Content.ReadAsStringAsync())!;
@@ -222,6 +269,9 @@ try
 }
 finally
 {
-    await using var drop = new NpgsqlCommand($"DROP SCHEMA \"{schema}\" CASCADE", connection);
+    // The admin connection may have been idle during long integration runs.
+    await using var cleanupConnection = new NpgsqlConnection(connectionString);
+    await cleanupConnection.OpenAsync();
+    await using var drop = new NpgsqlCommand($"DROP SCHEMA \"{schema}\" CASCADE", cleanupConnection);
     await drop.ExecuteNonQueryAsync();
 }

@@ -18,8 +18,61 @@ describe('Library', () => {
     fixture = TestBed.createComponent(Library);
     fixture.detectChanges();
     element = fixture.nativeElement;
+    const dialog = element.querySelector<HTMLDialogElement>('app-mark-read-dialog dialog')!;
+    dialog.showModal = () => dialog.setAttribute('open', '');
+    dialog.close = () => {
+      dialog.removeAttribute('open');
+      dialog.dispatchEvent(new Event('close'));
+    };
   });
   afterEach(() => http.verify());
+
+  it('opens the rating modal, cancels without changes, and updates the filtered table after Skip', async () => {
+    const unread = {
+      id: 'unread',
+      title: 'Unread',
+      isRead: false,
+      rating: 4.5,
+      genres: [],
+      shelfLocation: null,
+    };
+    http
+      .expectOne('/api/library/books')
+      .flush([unread, { id: 'read', title: 'Read', isRead: true, rating: 2, genres: [] }]);
+    await fixture.whenStable();
+    await chooseFilter('read-filter', 'Unread');
+    const dialog = element.querySelector<HTMLDialogElement>('app-mark-read-dialog dialog')!;
+    element.querySelector<HTMLButtonElement>('.row-book')!.click();
+    await fixture.whenStable();
+    expect(dialog.open).toBe(true);
+    Array.from(dialog.querySelectorAll<HTMLButtonElement>('button'))
+      .find((button) => button.textContent?.trim() === 'Cancel')!
+      .click();
+    await fixture.whenStable();
+    expect(rowIds()).toEqual(['unread']);
+    http.expectNone((request) => request.method === 'PATCH');
+    element.querySelector<HTMLButtonElement>('.row-book')!.click();
+    await fixture.whenStable();
+    Array.from(dialog.querySelectorAll<HTMLButtonElement>('button'))
+      .find((button) => button.textContent?.trim() === 'Skip')!
+      .click();
+    const request = http.expectOne({ method: 'PATCH', url: '/api/library/books/unread/read' });
+    expect(request.request.body).toEqual({
+      dateRead: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+    });
+    request.flush({ ...unread, isRead: true });
+    await fixture.whenStable();
+    expect(dialog.open).toBe(false);
+    expect(rowIds()).toEqual([]);
+    expect(element.textContent).toContain('No books match your filters');
+    element.querySelector<HTMLButtonElement>('.clear-filters')!.click();
+    await fixture.whenStable();
+    expect(rowIds()).toEqual(['read', 'unread']);
+    expect(element.querySelectorAll('.row-book').length).toBe(0);
+    expect(
+      element.querySelector('a[href="/library/books/unread"]')?.closest('tr')?.textContent,
+    ).toContain('4.5');
+  });
 
   function header(label: string): HTMLTableCellElement {
     return Array.from(element.querySelectorAll<HTMLTableCellElement>('thead th')).find(
@@ -462,6 +515,23 @@ describe('Library', () => {
     ).toEqual(['Title', 'Author', 'Genres', 'Read status', 'Rating', 'Shelf location']);
     const rows = element.querySelectorAll('tbody tr');
     expect(rows.length).toBe(3);
+    expect(element.querySelector('#library-title')?.textContent).toBe('My Library');
+    expect(
+      element.querySelector('thead tr')?.lastElementChild?.classList.contains('edit-cell'),
+    ).toBe(true);
+    expect(rows[2].lastElementChild?.classList.contains('edit-cell')).toBe(true);
+    expect(rows[2].lastElementChild?.querySelector('.row-edit')?.getAttribute('href')).toBe(
+      '/library/books/2/edit',
+    );
+    expect(element.querySelectorAll('.row-book').length).toBe(1);
+    const unreadIcon = rows[2].querySelector<HTMLButtonElement>('.row-book')!;
+    expect(unreadIcon.previousElementSibling?.classList.contains('row-edit')).toBe(true);
+    let rowClicked = false;
+    rows[2].addEventListener('click', () => {
+      rowClicked = true;
+    });
+    unreadIcon.click();
+    expect(rowClicked).toBe(false);
     expect(rows[1].textContent).toContain('A Wizard of Earthsea');
     expect(rows[1].textContent).toContain('Ursula K. Le Guin');
     expect(rows[1].textContent).toContain('Fantasy');

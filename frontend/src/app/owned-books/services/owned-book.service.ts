@@ -32,4 +32,13 @@ export class OwnedBookService {
   update(id: string, book: CreateOwnedBookRequest) {
     return this.http.put<SavedOwnedBook>(`/api/library/books/${encodeURIComponent(id)}`, book);
   }
+
+  markRead(id: string, rating?: number) {
+    const now = new Date();
+    const dateRead = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return this.http.patch<SavedOwnedBook>(
+      `/api/library/books/${encodeURIComponent(id)}/read`,
+      rating === undefined ? { dateRead } : { rating, dateRead },
+    );
+  }
 }

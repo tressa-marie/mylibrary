@@ -200,31 +200,46 @@ tbody tr:last-child > :last-child {
   border-bottom-right-radius: 0.75rem;
 }
 .edit-cell {
-  width: 2.75rem;
-  min-width: 2.75rem;
-  padding: 0.5rem 0.25rem 0.5rem 0.5rem;
+  width: 5.5rem;
+  min-width: 5.5rem;
+  padding: 0.5rem;
   vertical-align: middle;
 }
-.row-edit {
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+.row-edit,
+.row-book {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2rem;
   height: 2rem;
+  padding: 0;
+  border: 0;
   border-radius: 0.4rem;
+  background: transparent;
+  color: #254d3c;
   opacity: 0;
   pointer-events: none;
 }
 tbody tr:hover .row-edit,
-tbody tr:focus-within .row-edit {
+tbody tr:focus-within .row-edit,
+tbody tr:hover .row-book,
+tbody tr:focus-within .row-book {
   opacity: 1;
   pointer-events: auto;
 }
-.row-edit:hover {
+.row-edit:hover,
+.row-book:hover {
   background: #eae5da;
 }
 @media (hover: none) {
-  .row-edit {
+  .row-edit,
+  .row-book {
     opacity: 1;
     pointer-events: auto;
   }
@@ -255,7 +270,6 @@ button.sort-button:hover {
 tbody th {
   min-width: 12rem;
   font-weight: 600;
-  padding-left: 0.5rem;
 }
 tbody th a {
   text-decoration: none;

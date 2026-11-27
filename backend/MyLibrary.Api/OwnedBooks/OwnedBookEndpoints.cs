@@ -27,6 +27,30 @@ public static class OwnedBookEndpoints
     private static void MapRoutes(WebApplication app, string path)
     {
         var group = app.MapGroup(path);
+        group.MapPatch("/{id:guid}/read", async (Guid id, MarkBookReadRequest request, LibraryDbContext db, CancellationToken ct) =>
+        {
+            var book = await db.OwnedBooks.Include(x => x.EditionDetails).ThenInclude(x => x.Book)
+                .SingleOrDefaultAsync(x => x.Id == id, ct);
+            if (book is null) return Results.NotFound();
+            if (request.Rating is { } rating && (!double.IsFinite(rating) || rating < 0 || rating > 5))
+                return Results.ValidationProblem(new Dictionary<string, string[]> {
+                    ["rating"] = ["Rating must be between 0 and 5."]
+                });
+            book.IsRead = true;
+            book.DateRead = request.DateRead ?? DateOnly.FromDateTime(DateTime.Today);
+            if (request.Rating is not null) book.Rating = request.Rating;
+            try
+            {
+                await db.SaveChangesAsync(ct);
+                return Results.Ok(book);
+            }
+            catch (DbUpdateException ex)
+            {
+                app.Logger.LogError(ex, "Could not mark an owned book as read.");
+                return Results.Problem(statusCode: 500, title: "Unable to mark book as read",
+                    detail: "Your book could not be updated. Please try again.");
+            }
+        });
         group.MapPost("", async (CreateOwnedBookRequest request, LibraryDbContext db, CancellationToken ct) =>
         {
             var book = request.ToEntity();

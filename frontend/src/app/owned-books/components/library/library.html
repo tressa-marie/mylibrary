@@ -1,11 +1,14 @@
 <section aria-labelledby="library-title">
   <header class="library-header">
     <div>
-      <h1 id="library-title">Your library</h1>
+      <h1 id="library-title">My Library</h1>
       <p>Your books, all in one place.</p>
     </div>
     <a class="add-book" routerLink="/search">Add a book</a>
   </header>
+  @if (readMessage()) {
+    <p role="status">{{ readMessage() }}</p>
+  }
 
   @switch (state()) {
     @case ('loading') {
@@ -88,16 +91,19 @@
             </button>
           </div>
         </section>
-        <div class="table-container" role="region" aria-label="Library books" tabindex="0">
+        <div
+          #libraryTable
+          class="table-container"
+          role="region"
+          aria-label="Library books"
+          tabindex="0"
+        >
           <table>
             <caption class="visually-hidden">
               Books in your library. Select Title, Author, Rating, or Shelf location to sort.
             </caption>
             <thead>
               <tr>
-                <th class="edit-cell" scope="col">
-                  <span class="visually-hidden">Edit book</span>
-                </th>
                 <th scope="col" [attr.aria-sort]="sortField() === 'title' ? sortDirection() : null">
                   <button class="sort-button" type="button" (click)="sortBy('title')">
                     <span class="header-label">Title</span>
@@ -149,36 +155,14 @@
                     }
                   </button>
                 </th>
+                <th class="edit-cell" scope="col">
+                  <span class="visually-hidden">Book actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               @for (book of pagedBooks(); track book.id) {
                 <tr (click)="openBook(book.id)">
-                  <td class="edit-cell">
-                    <a
-                      class="row-edit"
-                      [routerLink]="['/library/books', book.id, 'edit']"
-                      (click)="$event.stopPropagation()"
-                      [attr.aria-label]="'Edit ' + book.title"
-                      title="Edit book"
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        aria-hidden="true"
-                        focusable="false"
-                      >
-                        <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" />
-                        <path d="m14 5 5 5" />
-                      </svg>
-                    </a>
-                  </td>
                   <th scope="row">
                     <a
                       [routerLink]="['/library/books', book.id]"
@@ -214,6 +198,63 @@
                     }
                   </td>
                   <td>{{ book.shelfLocation || '-' }}</td>
+                  <td class="edit-cell">
+                    <div class="row-actions">
+                      <a
+                        class="row-edit"
+                        [routerLink]="['/library/books', book.id, 'edit']"
+                        (click)="$event.stopPropagation()"
+                        [attr.aria-label]="'Edit ' + book.title"
+                        title="Edit book"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" />
+                          <path d="m14 5 5 5" />
+                        </svg>
+                      </a>
+                      @if (!book.isRead && !book.isDnf) {
+                        <button
+                          #readButton
+                          class="row-book"
+                          type="button"
+                          (click)="
+                            $event.stopPropagation();
+                            readDialog.open(book, readButton, libraryTable)
+                          "
+                          [attr.aria-label]="'Mark ' + book.title + ' as read'"
+                          title="Mark as read"
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <path
+                              d="M12 7v14M3 3h4a5 5 0 0 1 5 4 5 5 0 0 1 5-4h4v16h-4a5 5 0 0 0-5 2 5 5 0 0 0-5-2H3Z"
+                            />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -289,3 +330,4 @@
     }
   }
 </section>
+<app-mark-read-dialog #readDialog (saved)="onBookRead($event)" />
