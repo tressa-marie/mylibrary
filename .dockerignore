@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/.angular
+**/dist
+**/coverage
+**/bin
+**/obj
+**/*.db
+**/*.db-*
+**/*.log
+**/.env
+**/.env.*
+backend/SqliteMigrationsArchive
