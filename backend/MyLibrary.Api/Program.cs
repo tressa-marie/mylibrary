@@ -3,6 +3,7 @@ using MyLibrary.Api.Books;
 using MyLibrary.Api.Data;
 using MyLibrary.Api.OwnedBooks;
 using MyLibrary.Api.Shelves;
+using MyLibrary.Api.Goals;
 
 var builder = WebApplication.CreateBuilder(args);
 var libraryConnectionString = builder.Configuration.GetConnectionString("Library")
@@ -34,6 +35,7 @@ app.UseStaticFiles();
 app.MapBooks();
 app.MapOwnedBooks();
 app.MapShelves();
+app.MapGoals();
 
 app.MapHealthChecks("/api/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

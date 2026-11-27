@@ -11,9 +11,23 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
     public DbSet<Book> Books => Set<Book>();
     public DbSet<Edition> Editions => Set<Edition>();
     public DbSet<Shelf> Shelves => Set<Shelf>();
+    public DbSet<Goal> Goals => Set<Goal>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Goal>(goal =>
+        {
+            goal.Property(x => x.GoalType).HasConversion<string>().HasMaxLength(32);
+            goal.ToTable("Goals", table =>
+            {
+                table.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
+                table.HasCheckConstraint("CK_Goals_Num", "\"Num\" >= 0");
+                table.HasCheckConstraint("CK_Goals_GoalType",
+                    "\"GoalType\" IN ('BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage')");
+                table.HasCheckConstraint("CK_Goals_Percentage",
+                    "\"GoalType\" <> 'ReadBookPercentage' OR \"Num\" <= 100");
+            });
+        });
         modelBuilder.Entity<Book>(book =>
         {
             book.Property(x => x.Title).IsRequired().HasMaxLength(500);

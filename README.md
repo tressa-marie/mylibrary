@@ -333,3 +333,50 @@ membership changes, persistence, and safe deletion using a temporary database:
 dotnet build backend/MyLibrary.Api --configuration Verification
 node backend/tests/shelves-api-test.mjs
 ```
+
+## Goals API
+
+Goals are persisted in PostgreSQL with a server-generated `id`, date-only
+`startDate` and `endDate`, `goalType`, and an integer target `num`.
+
+| Method | Endpoint | Behavior |
+| --- | --- | --- |
+| POST | `/api/goals` | Create; returns `201`, the goal, and its `Location`. |
+| GET | `/api/goals` | List goals ordered by start date and ID; an empty list is `[]`. |
+| GET | `/api/goals/{id}` | Retrieve one goal, or `404`. |
+| PUT | `/api/goals/{id}` | Replace all editable fields, preserving ID; returns `200`, or `404`. |
+| DELETE | `/api/goals/{id}` | Delete; returns `204`, or `404`. |
+
+POST and PUT require all four fields:
+
+```json
+{
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "goalType": "BookCount",
+  "num": 24
+}
+```
+
+Goal types are `BookCount`, `PageCount`, `BuyBookCount`, and
+`ReadBookPercentage`. End date must be on or after start date. `num` must be
+a nonnegative integer; percentage targets must be between 0 and 100 inclusive.
+Missing or invalid fields return `400`; invalid updates do not change saved goals.
+The `AddGoals` EF migration creates the table and database constraints.
+Development startup applies it automatically; for other environments run
+`dotnet ef database update --project backend/MyLibrary.Api` with the intended
+`ConnectionStrings__Library` configured.
+
+Run the backend integration checks against PostgreSQL:
+
+```powershell
+$env:GoalsTest__ConnectionString = 'Host=localhost;Database=mylibrary_test;Username=postgres;Password=...'
+dotnet run --project backend/tests/Goals.ApiTests --configuration Verification
+```
+
+The harness creates a unique temporary schema, applies migrations, verifies CRUD,
+validation and persistence, then removes only that schema. The database role
+must have permission to create schemas. If the test connection is omitted, it
+uses `ConnectionStrings:Library` from environment variables or the API's user secrets.
+To run request validation alone without a database:
+`dotnet run --project backend/tests/Goals.ApiTests --configuration Verification -- --validation-only`.

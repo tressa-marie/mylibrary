@@ -104,6 +104,40 @@ namespace MyLibrary.Api.Migrations
                     b.ToTable("Editions");
                 });
 
+            modelBuilder.Entity("MyLibrary.Api.Domain.Goal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("GoalType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("Num")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Goals", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
+
+                            t.HasCheckConstraint("CK_Goals_GoalType", "\"GoalType\" IN ('BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage')");
+
+                            t.HasCheckConstraint("CK_Goals_Num", "\"Num\" >= 0");
+
+                            t.HasCheckConstraint("CK_Goals_Percentage", "\"GoalType\" <> 'ReadBookPercentage' OR \"Num\" <= 100");
+                        });
+                });
+
             modelBuilder.Entity("MyLibrary.Api.Domain.Shelf", b =>
                 {
                     b.Property<Guid>("Id")
