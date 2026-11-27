@@ -115,19 +115,6 @@
         </mat-form-field>
       </div>
     </div>
-    <div class="description-field">
-      <mat-form-field appearance="outline">
-        <mat-label>Description</mat-label>
-        <textarea
-          matInput
-          id="description"
-          name="description"
-          rows="5"
-          maxlength="20000"
-          [(ngModel)]="book.description"
-        ></textarea>
-      </mat-form-field>
-    </div>
     <div class="form-line-group">
       <mat-form-field appearance="outline">
         <mat-label>Genres</mat-label>
@@ -189,23 +176,47 @@
     @if (genreError()) {
       <p role="alert">{{ genreError() }}</p>
     }
+    <div class="form-line-group">
+      <mat-form-field appearance="outline">
+        <mat-label>Purchase location</mat-label>
+        <input
+          matInput
+          id="purchase-location"
+          name="purchaseLocation"
+          type="text"
+          maxlength="500"
+          [(ngModel)]="book.purchaseLocation"
+        />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Format</mat-label>
+        <input
+          matInput
+          id="format"
+          name="format"
+          type="text"
+          maxlength="100"
+          [(ngModel)]="book.format"
+        />
+      </mat-form-field>
+    </div>
+    <div class="description-field">
+      <mat-form-field appearance="outline">
+        <mat-label>Description</mat-label>
+        <textarea
+          matInput
+          id="description"
+          name="description"
+          rows="5"
+          maxlength="20000"
+          [(ngModel)]="book.description"
+        ></textarea>
+      </mat-form-field>
+    </div>
     <details class="advanced-options">
       <summary>
         Advanced Options <span class="advanced-arrow" aria-hidden="true">&#9662;</span>
       </summary>
-      <div>
-        <mat-form-field appearance="outline">
-          <mat-label>Purchase location</mat-label>
-          <input
-            matInput
-            id="purchase-location"
-            name="purchaseLocation"
-            type="text"
-            maxlength="500"
-            [(ngModel)]="book.purchaseLocation"
-          />
-        </mat-form-field>
-      </div>
       <div>
         <mat-form-field appearance="outline">
           <mat-label>Publisher</mat-label>
@@ -242,19 +253,6 @@
             type="text"
             maxlength="500"
             [(ngModel)]="book.edition"
-          />
-        </mat-form-field>
-      </div>
-      <div>
-        <mat-form-field appearance="outline">
-          <mat-label>Format</mat-label>
-          <input
-            matInput
-            id="format"
-            name="format"
-            type="text"
-            maxlength="100"
-            [(ngModel)]="book.format"
           />
         </mat-form-field>
       </div>

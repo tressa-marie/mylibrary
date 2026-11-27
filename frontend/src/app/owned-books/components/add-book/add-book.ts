@@ -73,6 +73,7 @@ export class AddBook implements OnInit {
       this.loadSavedBook();
       return;
     }
+    this.book.authorGender = 'female';
     // Check if there's a bookId query parameter in the URL
     const urlParams = new URLSearchParams(window.location.search);
     this.bookId = urlParams.get('bookId');
@@ -273,6 +274,7 @@ export class AddBook implements OnInit {
           }
           this.successMessage.set(`${saved.title} was added to your library.`);
           this.book = new OwnedBook();
+          this.book.authorGender = 'female';
           this.bookId = null;
           this.isRead = false;
           this.isDnf = false;
