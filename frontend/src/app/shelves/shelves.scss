@@ -73,8 +73,43 @@ thead {
 tbody tr:last-child > * {
   border-bottom: 0;
 }
-td:nth-child(3) {
+td:nth-child(4) {
   white-space: pre-wrap;
+}
+
+.edit-cell {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.5rem 0.25rem 0.5rem 0.5rem;
+  vertical-align: middle;
+}
+.row-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #254d3c;
+  opacity: 0;
+  pointer-events: none;
+}
+tbody tr:hover .row-edit,
+tbody tr:focus-within .row-edit {
+  opacity: 1;
+  pointer-events: auto;
+}
+.row-edit:hover:enabled {
+  background: #eae5da;
+}
+@media (hover: none) {
+  .row-edit {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 dialog {
   width: min(32rem, calc(100% - 2rem));

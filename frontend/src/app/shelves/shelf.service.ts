@@ -24,4 +24,8 @@ export class ShelfService {
   create(shelf: CreateShelfRequest) {
     return this.http.post<Shelf>('/api/shelves', shelf).pipe(timeout(15000));
   }
+
+  update(id: string, shelf: CreateShelfRequest) {
+    return this.http.put<Shelf>(`/api/shelves/${encodeURIComponent(id)}`, shelf).pipe(timeout(15000));
+  }
 }

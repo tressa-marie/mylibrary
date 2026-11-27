@@ -2,18 +2,18 @@ import { computed, Directive, input } from '@angular/core';
 
 const GENRE_COLORS = new Map<string, string>([
   ['romance', '#B6468F'],
-  ['fantasy', '#66335F'],
+  ['fantasy', '#7c23a0'],
   ['science fiction', '#828C23'],
-  ['literary', '#6E360C'],
-  ['young adult', '#222B47'],
-  ['thriller', '#9E2A2B'],
-  ['horror', '#540B0E'],
+  ['literary', '#5c4412'],
+  ['young adult', '#203b8b'],
+  ['thriller', '#af3b0d'],
+  ['horror', '#7c1418'],
   ['historical', '#E09F3E'],
   ['magical realism', '#0C6B6E'],
-  ['mystery', '#2E5A2D'],
-  ['lgbt', '#3E2D5A'],
+  ['mystery', '#297227'],
+  ['lgbt', '#7449bb'],
   ['poetry', '#2D5A51'],
-  ['non-fiction', '#5F5F5F'],
+  ['non-fiction', '#7e7e7e'],
 ]);
 
 @Directive({

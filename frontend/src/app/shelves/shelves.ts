@@ -32,6 +32,8 @@ export class Shelves implements OnInit {
   protected readonly saveError = signal('');
   protected readonly fieldErrors = signal<string[]>([]);
   protected readonly successMessage = signal('');
+  protected readonly editingShelf = signal<Shelf | null>(null);
+  private dialogTrigger?: HTMLButtonElement;
   protected draft = { name: '', room: '', description: '' };
 
   ngOnInit() {
@@ -53,8 +55,14 @@ export class Shelves implements OnInit {
       });
   }
 
-  protected open() {
-    this.draft = { name: '', room: '', description: '' };
+  protected open(shelf?: Shelf, trigger?: HTMLButtonElement) {
+    this.editingShelf.set(shelf ?? null);
+    this.dialogTrigger = trigger ?? this.addButton().nativeElement;
+    this.draft = {
+      name: shelf?.name ?? '',
+      room: shelf?.room ?? '',
+      description: shelf?.description ?? '',
+    };
     this.form().resetForm(this.draft);
     this.saveError.set('');
     this.fieldErrors.set([]);
@@ -67,7 +75,7 @@ export class Shelves implements OnInit {
   }
 
   protected onClosed() {
-    this.addButton().nativeElement.focus();
+    (this.dialogTrigger?.isConnected ? this.dialogTrigger : this.addButton().nativeElement).focus();
   }
 
   protected onCancel(event: Event) {
@@ -84,21 +92,25 @@ export class Shelves implements OnInit {
       return;
     }
     this.saving.set(true);
-    this.service
-      .create({
-        name: this.draft.name.trim(),
-        room: this.draft.room.trim() || null,
-        description: this.draft.description.trim() || null,
-        bookIds: [],
-      })
+    const shelf = this.editingShelf();
+    const request = {
+      name: this.draft.name.trim(),
+      room: this.draft.room.trim() || null,
+      description: this.draft.description.trim() || null,
+      bookIds: [...(shelf?.bookIds ?? [])],
+    };
+    const saveRequest = shelf
+      ? this.service.update(shelf.id, request)
+      : this.service.create(request);
+    saveRequest
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         finalize(() => this.saving.set(false)),
       )
       .subscribe({
-        next: (shelf) => {
+        next: (saved) => {
           this.dialog().nativeElement.close();
-          this.successMessage.set(`${shelf.name} was created.`);
+          this.successMessage.set(`${saved.name} was ${shelf ? 'updated' : 'created'}.`);
           this.loadShelves();
         },
         error: (error: HttpErrorResponse) => {

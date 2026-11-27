@@ -63,6 +63,7 @@ describe('Shelves', () => {
     await fixture.whenStable();
     const row = element.querySelector('tbody tr')!;
     expect(Array.from(row.children, (cell) => cell.textContent?.trim())).toEqual([
+      '',
       'Favorites',
       '-',
       '-',
@@ -171,5 +172,89 @@ describe('Shelves', () => {
     await fixture.whenStable();
     expect(element.querySelector('tbody')!.textContent).toContain('Favorites');
     expect(element.querySelector('section [role="alert"]')).toBeNull();
+  });
+
+  it('prefills the edit dialog and updates shelf details while preserving assigned books', async () => {
+    const shelf = { ...saved, bookIds: ['book-1', 'book-2'] };
+    http.expectOne('/api/shelves').flush([shelf]);
+    await fixture.whenStable();
+    element.querySelector<HTMLButtonElement>('.row-edit')!.click();
+    await fixture.whenStable();
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')!.textContent).toBe('Edit Shelf');
+    expect(element.querySelector<HTMLInputElement>('#shelf-name')!.value).toBe(shelf.name);
+    expect(element.querySelector<HTMLInputElement>('#shelf-room')!.value).toBe(shelf.room);
+    expect(element.querySelector<HTMLTextAreaElement>('#shelf-description')!.value).toBe(
+      shelf.description,
+    );
+    await fill(' New favorites ', ' Bedroom ', ' Updated description ');
+    save();
+    save();
+    const request = http.expectOne('/api/shelves/shelf-1');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual({
+      name: 'New favorites',
+      room: 'Bedroom',
+      description: 'Updated description',
+      bookIds: shelf.bookIds,
+    });
+    const updated = { ...shelf, ...request.request.body };
+    request.flush(updated);
+    http.expectOne('/api/shelves').flush([updated]);
+    await fixture.whenStable();
+    expect(dialog.open).toBe(false);
+    expect(element.querySelector('tbody')!.textContent).toContain('New favorites');
+    expect(element.textContent).toContain('New favorites was updated.');
+    http.expectNone((request) => request.method === 'POST');
+  });
+
+  it('cancels editing without saving, restores focus, and opens a fresh add form', async () => {
+    http.expectOne('/api/shelves').flush([saved]);
+    await fixture.whenStable();
+    const edit = element.querySelector<HTMLButtonElement>('.row-edit')!;
+    edit.click();
+    await fixture.whenStable();
+    await fill('Changed');
+    dialog.querySelector<HTMLButtonElement>('.close-button')!.click();
+    expect(document.activeElement).toBe(edit);
+    expect(element.querySelector('tbody th')!.textContent).toBe('Favorites');
+    http.expectNone((request) => request.method === 'PUT');
+    await open();
+    expect(dialog.querySelector('h2')!.textContent).toBe('Add Shelf');
+    expect(element.querySelector<HTMLInputElement>('#shelf-name')!.value).toBe('');
+    await fill('New shelf', '', '');
+    save();
+    const request = http.expectOne('/api/shelves');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body.bookIds).toEqual([]);
+    request.flush({ ...saved, name: 'New shelf' });
+    http.expectOne('/api/shelves').flush([saved]);
+    await fixture.whenStable();
+  });
+
+  it('retains edited fields after an update fails and allows retrying', async () => {
+    http.expectOne('/api/shelves').flush([{ ...saved, room: null, description: null }]);
+    await fixture.whenStable();
+    element.querySelector<HTMLButtonElement>('.row-edit')!.click();
+    await fixture.whenStable();
+    expect(element.querySelector<HTMLInputElement>('#shelf-room')!.value).toBe('');
+    await fill('Revised shelf', '', '');
+    save();
+    http.expectOne('/api/shelves/shelf-1').flush({}, { status: 500, statusText: 'Error' });
+    await fixture.whenStable();
+    expect(dialog.open).toBe(true);
+    expect(element.querySelector<HTMLInputElement>('#shelf-name')!.value).toBe('Revised shelf');
+    expect(dialog.querySelector('[role="alert"]')!.textContent).toContain(
+      'Your shelf could not be saved',
+    );
+    save();
+    const request = http.expectOne('/api/shelves/shelf-1');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body.room).toBeNull();
+    expect(request.request.body.description).toBeNull();
+    request.flush({ ...saved, name: 'Revised shelf' });
+    http.expectOne('/api/shelves').flush([{ ...saved, name: 'Revised shelf' }]);
+    await fixture.whenStable();
+    expect(dialog.open).toBe(false);
   });
 });
