@@ -9,6 +9,7 @@ public sealed class SaveGoalRequest
     public GoalType? GoalType { get; set; }
     public int? Num { get; set; }
     public bool IncludeNonLibraryBooks { get; set; }
+    public decimal? CompletedCount { get; set; }
 
     public Dictionary<string, string[]> Validate()
     {
@@ -24,6 +25,15 @@ public sealed class SaveGoalRequest
             errors["num"] = ["Enter a percentage from 0 to 100."];
         if (IncludeNonLibraryBooks && GoalType is not (Domain.GoalType.BookCount or Domain.GoalType.PageCount))
             errors["includeNonLibraryBooks"] = ["Only BookCount and PageCount goals can include books outside your library."];
+        if (CompletedCount is { } count)
+        {
+            if (count < 0 || count > int.MaxValue)
+                errors["completedCount"] = ["Enter a nonnegative completed count up to 2147483647."];
+            else if (GoalType == Domain.GoalType.ReadBookPercentage && count > 100)
+                errors["completedCount"] = ["Enter a completed percentage from 0 to 100."];
+            else if (GoalType != Domain.GoalType.ReadBookPercentage && count != decimal.Truncate(count))
+                errors["completedCount"] = ["Enter a whole number for the completed count."];
+        }
         return errors;
     }
 
@@ -35,5 +45,6 @@ public sealed class SaveGoalRequest
         goal.GoalType = GoalType!.Value;
         goal.Num = Num!.Value;
         goal.IncludeNonLibraryBooks = IncludeNonLibraryBooks;
+        goal.CompletedCount = CompletedCount;
     }
 }

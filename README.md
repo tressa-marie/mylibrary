@@ -193,7 +193,7 @@ dotnet ef database update --project backend/MyLibrary.Api
 - `GET /api/library/books` returns an array of lightweight library summaries, or
   `[]` for an empty library. Each summary contains `id`, `title`, `author`,
   `genres`, `isRead`, `rating`, `shelfId`, `shelfLocation`, `authorGender`,
-  `isDnf`, `wantToSell`, `bookCost`, `dateAcquired`, and `dateRead`. The database query
+  `isDnf`, `wantToSell`, `bookCost`, `dateAcquired`, `dateRead`, and `pageCount`. The database query
   selects only these fields; descriptions and other detail fields are retrieved
   separately by ID. No Google Books request is made.
 - `GET /api/library/books/{id}` returns one saved record, or `404`.
@@ -336,6 +336,26 @@ node backend/tests/shelves-api-test.mjs
 
 ## Goals API
 
+The Goals page displays a Chart.js progress card for each saved goal. Books and
+Pages count finished, non-DNF books with a `dateRead` within the goal's inclusive
+date range; Pages sums their known page counts. Book Buying Limit counts library
+copies with a `dateAcquired` in that range. Undated copies do not contribute to
+these dated goals. Library Read Percentage uses the whole saved library and
+counts both Read and DNF as read, counting each copy once. Its progress is the
+current library read percentage divided by the goal's target percentage.
+Buying-limit bars turn red strictly above 80% of the limit. Bars cap their visual
+fill at 100%, while counts and percentage labels can show exceeded targets.
+Progress currently uses saved library records.
+
+Use the edit icon to the right of a goal's title to edit completed count, target,
+and start/end dates. Goal type is fixed after creation, including through the API.
+Manual progress is saved as nullable `completedCount`; null uses calculated library
+progress, and zero is an explicit manual override. Counts must be nonnegative
+whole numbers; read-percentage overrides can have decimals between 0 and 100.
+The edit modal's **Use calculated library progress** option clears the override.
+Permanent deletion requires confirmation in the modal and removes the goal.
+`AddGoalCompletedCount` adds the nullable column while preserving existing goals.
+
 Goals are persisted in PostgreSQL with a server-generated `id`, date-only
 `startDate` and `endDate`, `goalType`, an integer target `num`, and the boolean
 `includeNonLibraryBooks`.
@@ -369,6 +389,9 @@ and when omitted on POST or PUT. Set it to `true` on `BookCount` or `PageCount`
 goals to include books outside the library. Enabling it for `BuyBookCount` or
 `ReadBookPercentage` returns `400`, including when changing an existing goal's type.
 `AddGoalIncludeNonLibraryBooks` adds the column and a database constraint for this rule.
+`completedCount` is optional; omitting it or sending null on PUT restores
+calculated progress. A PUT with a different `goalType` returns `400` without
+changing the goal.
 The `AddGoals` EF migration creates the table and database constraints.
 Development startup applies it automatically; for other environments run
 `dotnet ef database update --project backend/MyLibrary.Api` with the intended

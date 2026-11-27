@@ -110,6 +110,10 @@ namespace MyLibrary.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("CompletedCount")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("date");
 
@@ -133,6 +137,8 @@ namespace MyLibrary.Api.Migrations
 
                     b.ToTable("Goals", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Goals_CompletedCount", "\"CompletedCount\" IS NULL OR (\"CompletedCount\" >= 0 AND \"CompletedCount\" <= 2147483647 AND ((\"GoalType\" = 'ReadBookPercentage' AND \"CompletedCount\" <= 100) OR (\"GoalType\" <> 'ReadBookPercentage' AND \"CompletedCount\" = trunc(\"CompletedCount\"))))");
+
                             t.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
 
                             t.HasCheckConstraint("CK_Goals_GoalType", "\"GoalType\" IN ('BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage')");

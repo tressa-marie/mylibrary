@@ -31,6 +31,10 @@ public static class GoalEndpoints
         {
             var goal = await db.Goals.SingleOrDefaultAsync(x => x.Id == id, ct);
             if (goal is null) return Results.NotFound();
+            if (request.GoalType != goal.GoalType)
+                return Results.ValidationProblem(new Dictionary<string, string[]> {
+                    ["goalType"] = ["The goal type cannot be changed."]
+                });
             var errors = request.Validate();
             if (errors.Count > 0) return Results.ValidationProblem(errors);
             request.ApplyTo(goal);

@@ -1,0 +1,98 @@
+<dialog
+  #dialog
+  aria-labelledby="edit-goal-title"
+  (close)="onClosed()"
+  (cancel)="busy() && $event.preventDefault()"
+>
+  <h2 id="edit-goal-title">Edit {{ title() }}</h2>
+  <form
+    #editForm="ngForm"
+    #formElement
+    (ngSubmit)="save(editForm, formElement)"
+    [attr.aria-busy]="busy()"
+  >
+    <fieldset [disabled]="busy()">
+      <label for="edit-goal-count">{{
+        goal()?.goalType === 'ReadBookPercentage' ? 'Current read percentage' : 'Completed count'
+      }}</label>
+      <input
+        id="edit-goal-count"
+        name="completedCount"
+        type="number"
+        min="0"
+        [max]="goal()?.goalType === 'ReadBookPercentage' ? 100 : 2147483647"
+        [step]="goal()?.goalType === 'ReadBookPercentage' ? 0.01 : 1"
+        required
+        [(ngModel)]="draft.completedCount"
+        (ngModelChange)="useCalculated = false"
+      />
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          name="useCalculated"
+          [ngModel]="useCalculated"
+          (ngModelChange)="restoreCalculated($event)"
+        />
+        Use calculated library progress
+      </label>
+      <label for="edit-goal-target"
+        >Goal {{ goal()?.goalType === 'ReadBookPercentage' ? 'percentage' : 'number' }}</label
+      >
+      <input
+        id="edit-goal-target"
+        name="num"
+        type="number"
+        min="0"
+        [max]="goal()?.goalType === 'ReadBookPercentage' ? 100 : 2147483647"
+        step="1"
+        required
+        [(ngModel)]="draft.num"
+      />
+      <label for="edit-goal-start">Start Date</label>
+      <input
+        id="edit-goal-start"
+        name="startDate"
+        type="date"
+        required
+        [(ngModel)]="draft.startDate"
+      />
+      <label for="edit-goal-end">End Date</label>
+      <input id="edit-goal-end" name="endDate" type="date" required [(ngModel)]="draft.endDate" />
+      @if (error()) {
+        <div class="field-error" role="alert">
+          <p>{{ error() }}</p>
+          @if (fieldErrors().length) {
+            <ul>
+              @for (message of fieldErrors(); track $index) {
+                <li>{{ message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+      <div class="actions">
+        <button type="button" class="secondary" (click)="close()">Cancel</button>
+        <button type="submit" [disabled]="busy()">
+          {{ busy() ? 'Working…' : 'Save changes' }}
+        </button>
+      </div>
+      <div class="delete-section">
+        @if (confirmingDelete()) {
+          <p>Permanently delete this goal? This cannot be undone.</p>
+          <div class="actions">
+            <button type="button" class="secondary" (click)="confirmingDelete.set(false)">
+              Keep goal
+            </button>
+            <button type="button" class="danger" (click)="deleteGoal()" [disabled]="busy()">
+              Permanently delete goal
+            </button>
+          </div>
+        } @else {
+          <button type="button" class="danger" (click)="confirmingDelete.set(true)">
+            Delete goal permanently
+          </button>
+        }
+      </div>
+    </fieldset>
+  </form>
+</dialog>

@@ -42,4 +42,7 @@ export type LibraryBookSummary = Pick<
   | 'shelfId'
   | 'shelfLocation'
   | 'authorGender'
+  | 'pageCount'
+  | 'dateRead'
+  | 'dateAcquired'
 >;

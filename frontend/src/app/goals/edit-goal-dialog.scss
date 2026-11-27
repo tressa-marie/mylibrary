@@ -1,0 +1,107 @@
+dialog {
+  width: min(32rem, calc(100% - 2rem));
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 1.75rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  color: #252e26;
+  box-shadow: 0 1rem 4rem #0004;
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+h2 {
+  margin: 0 0 1.25rem;
+  font:
+    500 1.75rem 'Playfair Display',
+    Georgia,
+    serif;
+}
+fieldset {
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+label {
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+label:first-child {
+  margin-top: 0;
+}
+input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #8b9288;
+  border-radius: 0.4rem;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+.checkbox-label input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #254d3c;
+}
+button {
+  border: 1px solid #254d3c;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #254d3c;
+  color: #fffdf8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  background: #193829;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.secondary {
+  background: transparent;
+  color: #254d3c;
+}
+.secondary:hover {
+  background: #eae5da;
+}
+.danger {
+  background: #a13e29;
+  border-color: #a13e29;
+}
+.danger:hover {
+  background: #7f2f1d;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.delete-section {
+  border-top: 1px solid #dedbd1;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+.delete-section p {
+  margin: 0;
+}
+.field-error {
+  color: #a13e29;
+  font-size: 0.9rem;
+}

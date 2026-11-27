@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using MyLibrary.Api.Data;
 using MyLibrary.Api.Domain;
 using MyLibrary.Api.Goals;
+using MyLibrary.Api.OwnedBooks;
 using Npgsql;
 
 static void Check(bool condition, string message)
@@ -56,7 +57,8 @@ var connectionString = builder.Configuration["GoalsTest:ConnectionString"]
 // Only this unique schema is migrated and removed; existing library tables are untouched.
 var schema = "goals_test_" + Guid.NewGuid().ToString("N");
 var scopedConnection = new NpgsqlConnectionStringBuilder(connectionString) { SearchPath = schema };
-builder.Services.AddDbContext<LibraryDbContext>(options => options.UseNpgsql(scopedConnection.ConnectionString));
+var schemaInterceptor = new TestSchemaInterceptor(schema);
+builder.Services.AddDbContext<LibraryDbContext>(options => options.UseNpgsql(scopedConnection.ConnectionString).AddInterceptors(schemaInterceptor));
 builder.WebHost.UseUrls("http://127.0.0.1:0");
 builder.Logging.ClearProviders();
 await using var connection = new NpgsqlConnection(connectionString);
@@ -67,9 +69,12 @@ try
 {
     await using var app = builder.Build();
     app.MapGoals();
+    app.MapOwnedBooks();
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+        var activeSchema = await db.Database.SqlQueryRaw<string>("SELECT current_schema() AS \"Value\"").SingleAsync();
+        Check(activeSchema == schema, "Stopped before migration because schema isolation was not established.");
         await db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync("20261127043848_AddGoals");
         var legacyId = Guid.NewGuid();
         await db.Database.ExecuteSqlInterpolatedAsync($"""
@@ -78,7 +83,7 @@ try
             """);
         await db.Database.MigrateAsync();
         var legacyGoal = await db.Goals.SingleAsync(x => x.Id == legacyId);
-        Check(!legacyGoal.IncludeNonLibraryBooks && legacyGoal.Num == 12, "Migration did not preserve existing goals with the flag disabled.");
+        Check(!legacyGoal.IncludeNonLibraryBooks && legacyGoal.Num == 12 && legacyGoal.CompletedCount is null, "Migration did not preserve existing goals with automatic progress.");
         db.Goals.Remove(legacyGoal);
         await db.SaveChangesAsync();
         Check(!db.Database.HasPendingModelChanges(), "Migration does not match model.");
@@ -96,6 +101,18 @@ try
         return string.IsNullOrEmpty(text) ? null : JsonNode.Parse(text);
     }
     const string route = "/api/goals";
+    Check((await Request(HttpMethod.Get, "/api/library/books", null, HttpStatusCode.OK))!.AsArray().Count == 0,
+        "Isolated test library must be empty before adding progress data.");
+    var progressBook = await Request(HttpMethod.Post, "/api/library/books", new {
+        title = "Progress data", pageCount = 321, isRead = true,
+        dateRead = "2026-01-15", dateAcquired = "2026-01-01"
+    }, HttpStatusCode.Created);
+    var summaries = (await Request(HttpMethod.Get, "/api/library/books", null, HttpStatusCode.OK))!.AsArray();
+    Check(summaries.Count == 1, $"One POST should create exactly one library copy; got {summaries.Count}.");
+    var summary = summaries.Single(x => x!["id"]!.GetValue<Guid>() == progressBook!["id"]!.GetValue<Guid>())!;
+    Check(summary["pageCount"]!.GetValue<int>() == 321
+        && summary["dateRead"]!.GetValue<string>() == "2026-01-15"
+        && summary["dateAcquired"]!.GetValue<string>() == "2026-01-01", "Library summary is missing goal progress data.");
     Check((await Request(HttpMethod.Get, route, null, HttpStatusCode.OK))!.AsArray().Count == 0, "Initial list is not empty.");
     var saved = new List<JsonNode>();
     foreach (var type in Enum.GetNames<GoalType>())
@@ -147,13 +164,29 @@ try
         Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, $"{route}/{created["id"]}", null, HttpStatusCode.OK), created), "Flag did not persist on creation.");
         await Request(HttpMethod.Delete, $"{route}/{created["id"]}", null, HttpStatusCode.NoContent);
     }
+    foreach (var original in saved)
+    {
+        var path = $"{route}/{original["id"]}";
+        var type = original["goalType"]!.GetValue<string>();
+        var count = type == "ReadBookPercentage" ? 75.25m : 4m;
+        var manual = await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = type, num = 12, completedCount = count }, HttpStatusCode.OK);
+        Check(manual!["completedCount"]!.GetValue<decimal>() == count, "Manual count was not saved.");
+        Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, path, null, HttpStatusCode.OK), manual), "Manual count was not persisted.");
+        foreach (var invalidCount in new[] { -1m, type == "ReadBookPercentage" ? 101m : 1.5m })
+            await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = type, num = 12, completedCount = invalidCount }, HttpStatusCode.BadRequest);
+        Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, path, null, HttpStatusCode.OK), manual), "Invalid manual count changed saved data.");
+        var differentType = type == "BookCount" ? "PageCount" : "BookCount";
+        await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = differentType, num = 12 }, HttpStatusCode.BadRequest);
+        var automatic = await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = type, num = 12, completedCount = (decimal?)null }, HttpStatusCode.OK);
+        Check(automatic!["completedCount"] is null, "Automatic progress was not restored.");
+    }
     var updated = await Request(HttpMethod.Put, $"{route}/{saved[0]["id"]}",
-        new { startDate = "2027-02-01", endDate = "2027-02-01", goalType = "ReadBookPercentage", num = 100 }, HttpStatusCode.OK);
+        new { startDate = "2027-02-01", endDate = "2027-02-01", goalType = "BookCount", num = 100 }, HttpStatusCode.OK);
     Check(updated!["id"]!.GetValue<string>() == saved[0]["id"]!.GetValue<string>(), "Update changed ID.");
-    Check(updated["num"]!.GetValue<int>() == 100 && updated["goalType"]!.GetValue<string>() == "ReadBookPercentage", "Update lost values.");
+    Check(updated["num"]!.GetValue<int>() == 100 && updated["goalType"]!.GetValue<string>() == "BookCount", "Update lost values.");
     Check(!updated["includeNonLibraryBooks"]!.GetValue<bool>(), "Omitting the flag on PUT must reset it to false.");
     // A fresh context and connection verify values were persisted, independently of HTTP tracking.
-    await using (var db = new LibraryDbContext(new DbContextOptionsBuilder<LibraryDbContext>().UseNpgsql(scopedConnection.ConnectionString).Options))
+    await using (var db = new LibraryDbContext(new DbContextOptionsBuilder<LibraryDbContext>().UseNpgsql(scopedConnection.ConnectionString).AddInterceptors(schemaInterceptor).Options))
     {
         var persisted = await db.Goals.AsNoTracking().SingleAsync(x => x.Id == updated["id"]!.GetValue<Guid>());
         Check(persisted.Num == 100 && persisted.StartDate == new DateOnly(2027, 2, 1) && persisted.EndDate == persisted.StartDate,

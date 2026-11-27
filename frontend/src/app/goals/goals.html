@@ -3,6 +3,9 @@
     <h1 id="goals-title">Goals</h1>
     <button #createButton type="button" (click)="open(goalDialog)">Create New Goal</button>
   </header>
+  @if (successMessage()) {
+    <p role="status">{{ successMessage() }}</p>
+  }
   @switch (goalsState()) {
     @case ('loading') {
       <p role="status">Loading goals…</p>
@@ -20,12 +23,40 @@
           <h2>No Goals</h2>
           <p>Create a new goal using the Create New Goal button. Your goals will appear here.</p>
         </div>
+      } @else {
+        @switch (progressState()) {
+          @case ('loading') {
+            <p role="status">Loading goal progress…</p>
+          }
+          @case ('error') {
+            <div class="message" role="alert">
+              <h2>Could not load goal progress</h2>
+              <button type="button" (click)="loadProgressBooks()">Try again</button>
+            </div>
+          }
+          @case ('ready') {
+            <div class="goal-list">
+              @for (goal of goals(); track goal.id) {
+                <app-goal-progress-card
+                  [goal]="goal"
+                  [books]="progressBooks()"
+                  (edit)="goalEditor.open(goal, progressBooks(), $event, createButton)"
+                />
+              }
+            </div>
+          }
+        }
       }
     }
   }
 </section>
 
-<dialog #goalDialog aria-labelledby="create-goal-title" (close)="createButton.focus()">
+<dialog
+  #goalDialog
+  aria-labelledby="create-goal-title"
+  (close)="createButton.focus()"
+  (cancel)="saving() && $event.preventDefault()"
+>
   <h2
     #dialogTitle
     id="create-goal-title"
@@ -61,91 +92,152 @@
       </div>
     </form>
   } @else {
-    <form class="count-goal-form" (submit)="$event.preventDefault()">
-      <div
-        class="reading-target"
-        [class.buying-target]="selectedType() === 'BuyBookCount'"
-        [class.percentage-target]="selectedType() === 'ReadBookPercentage'"
-      >
-        <label for="goal-count">{{
-          selectedType() === 'ReadBookPercentage'
-            ? 'I want my library read'
-            : selectedType() === 'BuyBookCount'
-              ? 'I want to buy less'
-              : 'I want to read'
-        }}</label>
-        @if (selectedType() === 'BuyBookCount') {
-          <span>than</span>
-        } @else if (selectedType() === 'ReadBookPercentage') {
-          <span>percentage to be at</span>
-        }
-        <input
-          id="goal-count"
-          name="num"
-          type="number"
-          min="0"
-          [attr.max]="selectedType() === 'ReadBookPercentage' ? 100 : null"
-          step="1"
-          [(ngModel)]="countDraft.num"
-          [attr.aria-label]="
+    <form
+      class="count-goal-form"
+      #goalForm="ngForm"
+      #goalFormElement
+      (ngSubmit)="submitGoal(goalForm, goalFormElement, goalDialog)"
+      [attr.aria-busy]="saving()"
+    >
+      <fieldset class="goal-fields" [disabled]="saving()">
+        <div
+          class="reading-target"
+          [class.buying-target]="selectedType() === 'BuyBookCount'"
+          [class.percentage-target]="selectedType() === 'ReadBookPercentage'"
+        >
+          <label for="goal-count">{{
             selectedType() === 'ReadBookPercentage'
-              ? 'Percentage of library read'
+              ? 'I want my library read'
               : selectedType() === 'BuyBookCount'
-                ? 'Book purchase limit'
-                : selectedType() === 'PageCount'
-                  ? 'Number of pages'
-                  : 'Number of books'
-          "
-        />
-        <span>{{
-          selectedType() === 'ReadBookPercentage'
-            ? '%'
-            : selectedType() === 'PageCount'
-              ? 'pages'
-              : 'books'
-        }}</span>
-      </div>
-      @if (selectedType() === 'ReadBookPercentage') {
-        <div class="current-read-percentage" role="status">
-          @switch (percentageState()) {
-            @case ('loading') {
-              <p>Loading current read percentage…</p>
+                ? 'I want to buy less'
+                : 'I want to read'
+          }}</label>
+          @if (selectedType() === 'BuyBookCount') {
+            <span>than</span>
+          } @else if (selectedType() === 'ReadBookPercentage') {
+            <span>percentage to be at</span>
+          }
+          <input
+            id="goal-count"
+            name="num"
+            type="number"
+            min="0"
+            [max]="selectedType() === 'ReadBookPercentage' ? 100 : null"
+            step="1"
+            required
+            #numField="ngModel"
+            [(ngModel)]="countDraft.num"
+            [attr.aria-invalid]="goalForm.submitted && numField.invalid ? 'true' : null"
+            [attr.aria-describedby]="
+              goalForm.submitted && numField.invalid ? 'goal-count-error' : null
+            "
+            [attr.aria-label]="
+              selectedType() === 'ReadBookPercentage'
+                ? 'Percentage of library read'
+                : selectedType() === 'BuyBookCount'
+                  ? 'Book purchase limit'
+                  : selectedType() === 'PageCount'
+                    ? 'Number of pages'
+                    : 'Number of books'
+            "
+          />
+          <span>{{
+            selectedType() === 'ReadBookPercentage'
+              ? '%'
+              : selectedType() === 'PageCount'
+                ? 'pages'
+                : 'books'
+          }}</span>
+        </div>
+        @if (goalForm.submitted && numField.invalid) {
+          <p class="field-error" id="goal-count-error" role="alert">
+            @if (numField.hasError('required')) {
+              Enter a goal target.
+            } @else if (numField.hasError('max')) {
+              Enter a percentage from 0 to 100.
+            } @else {
+              Enter a target of zero or more.
             }
-            @case ('ready') {
-              <p>Current read percentage is {{ currentReadPercentage() }}%</p>
+          </p>
+        }
+        @if (selectedType() === 'ReadBookPercentage') {
+          <div class="current-read-percentage" role="status">
+            @switch (percentageState()) {
+              @case ('loading') {
+                <p>Loading current read percentage…</p>
+              }
+              @case ('ready') {
+                <p>Current read percentage is {{ currentReadPercentage() }}%</p>
+              }
+              @case ('error') {
+                <p>Could not load current read percentage.</p>
+                <button class="secondary-button" type="button" (click)="loadReadPercentage()">
+                  Try again
+                </button>
+              }
             }
-            @case ('error') {
-              <p>Could not load current read percentage.</p>
-              <button class="secondary-button" type="button" (click)="loadReadPercentage()">
-                Try again
-              </button>
-            }
+          </div>
+        }
+        <div class="date-field">
+          <label for="goal-start-date">Start Date</label>
+          <input
+            id="goal-start-date"
+            name="startDate"
+            type="date"
+            required
+            #startDateField="ngModel"
+            [(ngModel)]="countDraft.startDate"
+            [attr.aria-invalid]="goalForm.submitted && startDateField.invalid ? 'true' : null"
+            [attr.aria-describedby]="
+              goalForm.submitted && startDateField.invalid ? 'goal-start-date-error' : null
+            "
+          />
+          @if (goalForm.submitted && startDateField.invalid) {
+            <p class="field-error" id="goal-start-date-error" role="alert">Enter a start date.</p>
           }
         </div>
-      }
-      <div class="date-field">
-        <label for="goal-start-date">Start Date</label>
-        <input
-          id="goal-start-date"
-          name="startDate"
-          type="date"
-          [(ngModel)]="countDraft.startDate"
-        />
-      </div>
-      <div class="date-field">
-        <label for="goal-end-date">End Date</label>
-        <input id="goal-end-date" name="endDate" type="date" [(ngModel)]="countDraft.endDate" />
-      </div>
-      <div class="dialog-actions">
-        <button
-          class="secondary-button"
-          type="button"
-          (click)="step.set('type'); dialogTitle.focus()"
-        >
-          Back
-        </button>
-        <button type="button">Submit</button>
-      </div>
+        <div class="date-field">
+          <label for="goal-end-date">End Date</label>
+          <input
+            id="goal-end-date"
+            name="endDate"
+            type="date"
+            required
+            #endDateField="ngModel"
+            [(ngModel)]="countDraft.endDate"
+            [attr.aria-invalid]="goalForm.submitted && endDateField.invalid ? 'true' : null"
+            [attr.aria-describedby]="
+              goalForm.submitted && endDateField.invalid ? 'goal-end-date-error' : null
+            "
+          />
+          @if (goalForm.submitted && endDateField.invalid) {
+            <p class="field-error" id="goal-end-date-error" role="alert">Enter an end date.</p>
+          }
+        </div>
+        @if (saveError()) {
+          <div class="field-error" role="alert">
+            <p>{{ saveError() }}</p>
+            @if (fieldErrors().length) {
+              <ul>
+                @for (error of fieldErrors(); track $index) {
+                  <li>{{ error }}</li>
+                }
+              </ul>
+            }
+          </div>
+        }
+        <div class="dialog-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            (click)="step.set('type'); dialogTitle.focus()"
+          >
+            Back
+          </button>
+          <button type="submit" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Submit' }}</button>
+        </div>
+      </fieldset>
     </form>
   }
 </dialog>
+<app-edit-goal-dialog #goalEditor (saved)="onGoalSaved($event)" (deleted)="onGoalDeleted($event)" />

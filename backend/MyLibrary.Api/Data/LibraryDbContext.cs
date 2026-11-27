@@ -19,8 +19,13 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
         {
             goal.Property(x => x.GoalType).HasConversion<string>().HasMaxLength(32);
             goal.Property(x => x.IncludeNonLibraryBooks).HasDefaultValue(false);
+            goal.Property(x => x.CompletedCount).HasPrecision(14, 2);
             goal.ToTable("Goals", table =>
             {
+                table.HasCheckConstraint("CK_Goals_CompletedCount",
+                    "\"CompletedCount\" IS NULL OR (\"CompletedCount\" >= 0 AND \"CompletedCount\" <= 2147483647 AND " +
+                    "((\"GoalType\" = 'ReadBookPercentage' AND \"CompletedCount\" <= 100) OR " +
+                    "(\"GoalType\" <> 'ReadBookPercentage' AND \"CompletedCount\" = trunc(\"CompletedCount\"))))");
                 table.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
                 table.HasCheckConstraint("CK_Goals_Num", "\"Num\" >= 0");
                 table.HasCheckConstraint("CK_Goals_GoalType",

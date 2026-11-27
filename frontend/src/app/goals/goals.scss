@@ -1,6 +1,10 @@
 :host {
   display: block;
 }
+.goal-list {
+  display: grid;
+  gap: 1.25rem;
+}
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -193,6 +197,21 @@ dialog::backdrop {
 }
 .count-goal-form .dialog-actions {
   margin-top: 1.5rem;
+}
+.field-error {
+  margin: 0.5rem 0 0;
+  color: #a13e29;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.goal-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.count-goal-form input[aria-invalid='true'] {
+  border-color: #a13e29;
 }
 @media (max-width: 600px) {
   .page-header {

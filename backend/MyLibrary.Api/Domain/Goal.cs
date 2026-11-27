@@ -19,4 +19,5 @@ public sealed class Goal
     public GoalType GoalType { get; set; }
     public int Num { get; set; }
     public bool IncludeNonLibraryBooks { get; set; }
+    public decimal? CompletedCount { get; set; }
 }
