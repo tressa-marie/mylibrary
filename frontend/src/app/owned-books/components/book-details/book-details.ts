@@ -5,10 +5,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { catchError, combineLatest, EMPTY, startWith, Subject, switchMap } from 'rxjs';
 import { SavedOwnedBook } from '../../models/owned-book-api';
 import { OwnedBookService } from '../../services/owned-book.service';
+import { GenreColor } from '../../../shared/genre-color';
 
 @Component({
   selector: 'app-book-details',
-  imports: [RouterLink],
+  imports: [RouterLink, GenreColor],
   templateUrl: './book-details.html',
   styleUrl: './book-details.scss',
 })

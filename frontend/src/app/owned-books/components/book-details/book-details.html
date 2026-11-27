@@ -47,7 +47,7 @@
                   @if (saved.genres.length) {
                     <ul class="genre-tags" aria-label="Genres">
                       @for (genre of saved.genres; track genre) {
-                        <li>{{ genre }}</li>
+                        <li [appGenreColor]="genre">{{ genre }}</li>
                       }
                     </ul>
                   } @else {

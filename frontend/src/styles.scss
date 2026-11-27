@@ -111,8 +111,18 @@ button {
 .genre-tags li {
   padding: 0.2rem 0.65rem;
   border-radius: 1rem;
-  background: #e1ede3;
-  color: #254d3c;
+  background: var(--genre-background, #959595);
+  color: var(--genre-text, #000000);
   font-size: 0.85rem;
   overflow-wrap: anywhere;
+}
+
+mat-chip-row[appGenreColor] {
+  @include mat.chips-overrides(
+    (
+      elevated-container-color: var(--genre-background),
+      label-text-color: var(--genre-text),
+      with-trailing-icon-trailing-icon-color: var(--genre-text),
+    )
+  );
 }

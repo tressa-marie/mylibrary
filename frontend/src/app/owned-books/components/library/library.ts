@@ -4,12 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { LibraryBookSummary } from '../../models/owned-book-api';
 import { OwnedBookService } from '../../services/owned-book.service';
+import { GenreColor } from '../../../shared/genre-color';
 
 type SortField = 'title' | 'author' | 'shelfLocation' | 'rating';
 
 @Component({
   selector: 'app-library',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, GenreColor],
   templateUrl: './library.html',
   styleUrl: './library.scss',
 })

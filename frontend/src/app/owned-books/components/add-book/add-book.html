@@ -133,7 +133,7 @@
         <mat-label>Genres</mat-label>
         <mat-chip-grid #genreGrid aria-label="Book genres" [disabled]="loading() || saving()">
           @for (genre of book.genres; track genre) {
-            <mat-chip-row (removed)="removeGenre(genre)">
+            <mat-chip-row [appGenreColor]="genre" (removed)="removeGenre(genre)">
               {{ genre }}
               <button matChipRemove type="button" [attr.aria-label]="'Remove ' + genre">×</button>
             </mat-chip-row>

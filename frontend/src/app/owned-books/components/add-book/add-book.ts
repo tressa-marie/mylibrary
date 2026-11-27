@@ -15,6 +15,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OwnedBookService } from '../../services/owned-book.service';
 import { CreateOwnedBookRequest } from '../../models/owned-book-api';
 import { Shelf, ShelfService } from '../../../shelves/shelf.service';
+import { GenreColor } from '../../../shared/genre-color';
 
 @Component({
   selector: 'app-add-book',
@@ -29,6 +30,7 @@ import { Shelf, ShelfService } from '../../../shelves/shelf.service';
     MatInputModule,
     MatSelectModule,
     MatChipsModule,
+    GenreColor,
   ],
 })
 export class AddBook implements OnInit {
