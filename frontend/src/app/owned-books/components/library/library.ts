@@ -1,4 +1,13 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +16,8 @@ import { OwnedBookService } from '../../services/owned-book.service';
 import { GenreColor } from '../../../shared/genre-color';
 
 type SortField = 'title' | 'author' | 'shelfLocation' | 'rating';
+type FilterKey = 'genre' | 'read' | 'shelf';
+type FilterSelections = Record<FilterKey, string[]>;
 
 @Component({
   selector: 'app-library',
@@ -21,29 +32,52 @@ export class Library implements OnInit {
   protected readonly books = signal<LibraryBookSummary[]>([]);
   protected readonly pageSize = signal(25);
   protected readonly pageIndex = signal(0);
-  protected readonly genreFilter = signal<string | null>(null);
-  protected readonly readFilter = signal<'all' | 'read' | 'unread'>('all');
-  protected readonly shelfFilter = signal<string | null>(null);
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly appliedFilters = signal<FilterSelections>({ genre: [], read: [], shelf: [] });
+  protected readonly draftSelection = signal<string[]>([]);
+  protected readonly openFilter = signal<FilterKey | null>(null);
   protected readonly genreOptions = computed(() =>
     this.filterOptions(this.books().flatMap((book) => book.genres ?? [])),
   );
   protected readonly shelfOptions = computed(() =>
     this.filterOptions(this.books().map((book) => book.shelfLocation)),
   );
-  protected readonly hasFilters = computed(
-    () => this.genreFilter() !== null || this.readFilter() !== 'all' || this.shelfFilter() !== null,
+  protected readonly filters = computed(() => [
+    {
+      key: 'genre' as const,
+      label: 'Genre',
+      allLabel: 'All genres',
+      options: [{ value: '', label: 'No genre' }, ...this.genreOptions()],
+    },
+    {
+      key: 'read' as const,
+      label: 'Read status',
+      allLabel: 'All books',
+      options: [
+        { value: 'read', label: 'Read' },
+        { value: 'unread', label: 'Unread' },
+      ],
+    },
+    {
+      key: 'shelf' as const,
+      label: 'Shelf',
+      allLabel: 'All shelves',
+      options: [{ value: '', label: 'No shelf' }, ...this.shelfOptions()],
+    },
+  ]);
+  protected readonly hasFilters = computed(() =>
+    this.filters().some((filter) =>
+      filter.options.some((option) => !this.appliedFilters()[filter.key].includes(option.value)),
+    ),
   );
   private readonly filteredBooks = computed(() =>
     this.books().filter(
       (book) =>
-        (this.genreFilter() === null ||
-          (this.genreFilter() === ''
-            ? !book.genres?.length
-            : book.genres?.some((genre) => this.filterValue(genre) === this.genreFilter()))) &&
-        (this.readFilter() === 'all' ||
-          (this.readFilter() === 'read' ? book.isRead : !book.isRead)) &&
-        (this.shelfFilter() === null ||
-          this.filterValue(book.shelfLocation) === this.shelfFilter()),
+        (book.genres.length ? book.genres : ['']).some((genre) =>
+          this.appliedFilters().genre.includes(this.filterValue(genre)),
+        ) &&
+        this.appliedFilters().read.includes(book.isRead ? 'read' : 'unread') &&
+        this.appliedFilters().shelf.includes(this.filterValue(book.shelfLocation)),
     ),
   );
   protected readonly sortField = signal<SortField>('title');
@@ -107,24 +141,74 @@ export class Library implements OnInit {
 
   protected clearFilters() {
     this.pageIndex.set(0);
-    this.genreFilter.set(null);
-    this.readFilter.set('all');
-    this.shelfFilter.set(null);
+    const selections: FilterSelections = { genre: [], read: [], shelf: [] };
+    for (const filter of this.filters()) {
+      selections[filter.key] = filter.options.map((option) => option.value);
+    }
+    this.appliedFilters.set(selections);
+    this.openFilter.set(null);
+    this.draftSelection.set([]);
   }
 
-  protected changeGenre(value: string | null) {
-    this.genreFilter.set(value);
-    this.pageIndex.set(0);
+  protected toggleFilter(key: FilterKey) {
+    if (this.openFilter() === key) {
+      this.openFilter.set(null);
+      return;
+    }
+    this.draftSelection.set([...this.appliedFilters()[key]]);
+    this.openFilter.set(key);
   }
 
-  protected changeReadStatus(value: 'all' | 'read' | 'unread') {
-    this.readFilter.set(value);
-    this.pageIndex.set(0);
+  protected toggleSelection(value: string) {
+    this.draftSelection.update((selection) =>
+      selection.includes(value)
+        ? selection.filter((item) => item !== value)
+        : [...selection, value],
+    );
   }
 
-  protected changeShelf(value: string | null) {
-    this.shelfFilter.set(value);
+  protected selectAll(key: FilterKey) {
+    this.draftSelection.set(
+      this.filters()
+        .find((filter) => filter.key === key)!
+        .options.map((option) => option.value),
+    );
+  }
+
+  protected applyFilter(key: FilterKey, event: Event) {
+    event.preventDefault();
+    this.appliedFilters.update((filters) => ({ ...filters, [key]: [...this.draftSelection()] }));
     this.pageIndex.set(0);
+    this.closeFilter(true);
+  }
+
+  protected filterSummary(key: FilterKey) {
+    const filter = this.filters().find((entry) => entry.key === key)!;
+    const selection = this.appliedFilters()[key];
+    if (!selection.length) return 'None selected';
+    if (selection.length === filter.options.length) return filter.allLabel;
+    if (selection.length === 1)
+      return filter.options.find((option) => option.value === selection[0])?.label;
+    return `${selection.length} selected`;
+  }
+
+  private closeFilter(restoreFocus = false) {
+    const key = this.openFilter();
+    this.openFilter.set(null);
+    if (restoreFocus && key)
+      this.element.nativeElement.querySelector<HTMLButtonElement>(`#${key}-filter`)?.focus();
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent) {
+    const key = this.openFilter();
+    const field = key && this.element.nativeElement.querySelector(`#${key}-filter-field`);
+    if (field && !field.contains(event.target as Node)) this.closeFilter();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape() {
+    this.closeFilter(true);
   }
 
   protected changePageSize(size: number) {
@@ -162,6 +246,7 @@ export class Library implements OnInit {
         next: (books) => {
           this.pageIndex.set(0);
           this.books.set(books.map((book) => ({ ...book, genres: book.genres ?? [] })));
+          this.clearFilters();
           this.state.set('ready');
         },
         error: () => this.state.set('error'),

@@ -22,46 +22,62 @@
       @if (books().length) {
         <section class="filters" aria-label="Library filters">
           <div class="filter-controls">
-            <div class="filter-field">
-              <label for="genre-filter">Genre</label>
-              <select
-                id="genre-filter"
-                [ngModel]="genreFilter()"
-                (ngModelChange)="changeGenre($event)"
-              >
-                <option [ngValue]="null">All genres</option>
-                <option value="">No genre</option>
-                @for (option of genreOptions(); track option.value) {
-                  <option [ngValue]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            </div>
-            <div class="filter-field">
-              <label for="read-filter">Read status</label>
-              <select
-                id="read-filter"
-                [ngModel]="readFilter()"
-                (ngModelChange)="changeReadStatus($event)"
-              >
-                <option value="all">All books</option>
-                <option value="read">Read</option>
-                <option value="unread">Unread</option>
-              </select>
-            </div>
-            <div class="filter-field">
-              <label for="shelf-filter">Shelf</label>
-              <select
-                id="shelf-filter"
-                [ngModel]="shelfFilter()"
-                (ngModelChange)="changeShelf($event)"
-              >
-                <option [ngValue]="null">All shelves</option>
-                <option value="">No shelf</option>
-                @for (option of shelfOptions(); track option.value) {
-                  <option [ngValue]="option.value">{{ option.label }}</option>
-                }
-              </select>
-            </div>
+            @for (filter of filters(); track filter.key) {
+              <div class="filter-field" [id]="filter.key + '-filter-field'">
+                <span class="filter-label" [id]="filter.key + '-label'">{{ filter.label }}</span>
+                <div class="filter-dropdown">
+                  <button
+                    class="filter-trigger"
+                    type="button"
+                    [id]="filter.key + '-filter'"
+                    [attr.aria-labelledby]="filter.key + '-label ' + filter.key + '-summary'"
+                    [attr.aria-expanded]="openFilter() === filter.key"
+                    [attr.aria-controls]="
+                      openFilter() === filter.key ? filter.key + '-panel' : null
+                    "
+                    (click)="toggleFilter(filter.key)"
+                  >
+                    <span [id]="filter.key + '-summary'">{{ filterSummary(filter.key) }}</span>
+                    <span aria-hidden="true">&#9662;</span>
+                  </button>
+                  @if (openFilter() === filter.key) {
+                    <form
+                      class="filter-panel"
+                      [id]="filter.key + '-panel'"
+                      (submit)="applyFilter(filter.key, $event)"
+                    >
+                      <div class="filter-actions">
+                        <button type="button" class="filter-action" (click)="selectAll(filter.key)">
+                          Select all
+                        </button>
+                        <button
+                          type="button"
+                          class="filter-action"
+                          (click)="draftSelection.set([])"
+                        >
+                          Clear selection
+                        </button>
+                      </div>
+                      <fieldset class="filter-options">
+                        <legend class="visually-hidden">{{ filter.label }}</legend>
+                        @for (option of filter.options; track option.value) {
+                          <label class="filter-option">
+                            <input
+                              type="checkbox"
+                              [value]="option.value"
+                              [checked]="draftSelection().includes(option.value)"
+                              (change)="toggleSelection(option.value)"
+                            />
+                            <span>{{ option.label }}</span>
+                          </label>
+                        }
+                      </fieldset>
+                      <button class="apply-filter" type="submit">Apply filters</button>
+                    </form>
+                  }
+                </div>
+              </div>
+            }
             <button
               class="clear-filters"
               type="button"

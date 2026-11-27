@@ -64,12 +64,21 @@ button:hover {
   gap: 0.5rem;
   min-width: 0;
 }
-.filter-field label {
+.filter-label {
   font-size: 0.9rem;
   font-weight: 600;
   white-space: nowrap;
 }
-.filter-field select {
+.filter-dropdown {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+button.filter-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   width: 100%;
   min-width: 0;
   min-height: 2rem;
@@ -79,6 +88,67 @@ button:hover {
   background: white;
   color: inherit;
   font: inherit;
+  text-align: left;
+}
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  z-index: 10;
+  width: max(100%, 16rem);
+  max-width: calc(100vw - 4rem);
+  padding: 0.75rem;
+  border: 1px solid #8b9288;
+  border-radius: 0.5rem;
+  background: #fffdf8;
+  box-shadow: 0 6px 18px #252e2626;
+}
+.filter-field:not(:first-child) .filter-panel {
+  right: 0;
+  left: auto;
+}
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+button.filter-action {
+  padding: 0.25rem;
+  border: 0;
+  background: transparent;
+  color: #254d3c;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+button.filter-action:hover {
+  background: #eae5da;
+}
+.filter-options {
+  max-height: 15rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  border: 0;
+}
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.filter-option input {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  accent-color: #254d3c;
+}
+button.apply-filter {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
 }
 button.clear-filters {
   min-height: 2rem;
@@ -283,6 +353,12 @@ tbody tr:focus-within > * {
   white-space: nowrap;
 }
 @media (max-width: 600px) {
+  .filter-field {
+    flex-basis: 100%;
+  }
+  .filter-panel {
+    width: 100%;
+  }
   .library-header {
     align-items: flex-start;
     flex-direction: column;

@@ -159,31 +159,48 @@ describe('Library', () => {
   ];
 
   async function chooseFilter(id: string, label: string) {
-    const select = element.querySelector<HTMLSelectElement>(`#${id}`)!;
-    select.selectedIndex = Array.from(select.options).findIndex(
-      (option) => option.textContent?.trim() === label,
-    );
-    select.dispatchEvent(new Event('change'));
+    await openDropdown(id);
+    await clickFilterAction('Clear selection');
+    if (label.startsWith('All ')) await clickFilterAction('Select all');
+    else await toggleOption(label);
+    await clickFilterAction('Apply filters');
+  }
+
+  async function openDropdown(id: string) {
+    element.querySelector<HTMLButtonElement>(`#${id}`)!.click();
+    await fixture.whenStable();
+  }
+
+  async function clickFilterAction(label: string) {
+    Array.from(element.querySelectorAll<HTMLButtonElement>('.filter-panel button'))
+      .find((button) => button.textContent?.trim() === label)!
+      .click();
+    await fixture.whenStable();
+  }
+
+  async function toggleOption(label: string) {
+    Array.from(element.querySelectorAll<HTMLLabelElement>('.filter-option'))
+      .find((option) => option.textContent?.trim() === label)!
+      .querySelector<HTMLInputElement>('input')!
+      .click();
     await fixture.whenStable();
   }
 
   it('builds unique filter options and combines genre, read status, and shelf filters', async () => {
     http.expectOne('/api/library/books').flush(filterBooks);
     await fixture.whenStable();
-    const options = (id: string) =>
-      Array.from(element.querySelector<HTMLSelectElement>(`#${id}`)!.options, (option) =>
+    const options = async (id: string) => {
+      await openDropdown(id);
+      const labels = Array.from(element.querySelectorAll('.filter-option'), (option) =>
         option.textContent?.trim(),
       );
-    expect(options('genre-filter')).toEqual([
-      'All genres',
-      'No genre',
-      'Adventure',
-      'Fantasy',
-      'Mystery',
-    ]);
+      await openDropdown(id);
+      return labels;
+    };
+    expect(await options('genre-filter')).toEqual(['No genre', 'Adventure', 'Fantasy', 'Mystery']);
     await chooseFilter('genre-filter', 'Adventure');
     expect(rowIds()).toEqual(['alpha']);
-    expect(options('shelf-filter')).toEqual(['All shelves', 'No shelf', 'Living room', 'Study']);
+    expect(await options('shelf-filter')).toEqual(['No shelf', 'Living room', 'Study']);
     await chooseFilter('genre-filter', 'Fantasy');
     expect(rowIds()).toEqual(['alpha', 'delta', 'zulu']);
     await chooseFilter('read-filter', 'Read');
@@ -191,9 +208,113 @@ describe('Library', () => {
     await chooseFilter('shelf-filter', 'Study');
     expect(rowIds()).toEqual(['delta']);
     expect(element.querySelector('.book-count')).toBeNull();
-    expect(options('shelf-filter')).toContain('Living room');
+    expect(await options('shelf-filter')).toContain('Living room');
     await chooseFilter('read-filter', 'Unread');
     expect(rowIds()).toEqual(['alpha']);
+  });
+
+  it('starts with all options checked in each dropdown and restores them when filters are reset', async () => {
+    http.expectOne('/api/library/books').flush(filterBooks);
+    await fixture.whenStable();
+    for (const id of ['genre-filter', 'read-filter', 'shelf-filter']) {
+      await openDropdown(id);
+      const checkboxes = Array.from(
+        element.querySelectorAll<HTMLInputElement>('.filter-option input'),
+      );
+      expect(checkboxes.length).toBeGreaterThan(0);
+      expect(checkboxes.every((checkbox) => checkbox.checked)).toBe(true);
+      expect(element.querySelector('.filter-hint')).toBeNull();
+      await openDropdown(id);
+    }
+    expect(element.querySelector<HTMLButtonElement>('.clear-filters')!.disabled).toBe(true);
+    await chooseFilter('genre-filter', 'Fantasy');
+    element.querySelector<HTMLButtonElement>('.clear-filters')!.click();
+    await fixture.whenStable();
+    expect(rowIds().length).toBe(5);
+    await openDropdown('genre-filter');
+    expect(element.querySelectorAll('.filter-option input:checked').length).toBe(4);
+  });
+
+  for (const key of ['genre', 'read', 'shelf']) {
+    it(`matches no books when the ${key} selection is empty and applied`, async () => {
+      http.expectOne('/api/library/books').flush(filterBooks);
+      await fixture.whenStable();
+      await openDropdown(`${key}-filter`);
+      await clickFilterAction('Clear selection');
+      expect(rowIds().length).toBe(5);
+      await clickFilterAction('Apply filters');
+      expect(rowIds()).toEqual([]);
+      expect(element.querySelector(`#${key}-summary`)?.textContent).toBe('None selected');
+      await openDropdown(`${key}-filter`);
+      expect(element.querySelectorAll('.filter-option input:checked').length).toBe(0);
+      await clickFilterAction('Select all');
+      expect(rowIds()).toEqual([]);
+      await clickFilterAction('Apply filters');
+      expect(rowIds().length).toBe(5);
+    });
+  }
+
+  it('stages multiple selections and bulk actions until submitted', async () => {
+    http.expectOne('/api/library/books').flush(filterBooks);
+    await fixture.whenStable();
+    await openDropdown('genre-filter');
+    await clickFilterAction('Clear selection');
+    await toggleOption('Adventure');
+    await toggleOption('Mystery');
+    expect(rowIds()).toEqual(['alpha', 'beta', 'delta', 'gamma', 'zulu']);
+    expect(element.querySelector('#genre-summary')?.textContent).toBe('All genres');
+    await clickFilterAction('Apply filters');
+    expect(rowIds()).toEqual(['alpha', 'beta']);
+    expect(element.querySelector('#genre-summary')?.textContent).toBe('2 selected');
+    await openDropdown('genre-filter');
+    await clickFilterAction('Select all');
+    expect(element.querySelectorAll('.filter-option input:checked').length).toBe(4);
+    expect(rowIds()).toEqual(['alpha', 'beta']);
+    await clickFilterAction('Apply filters');
+    expect(rowIds().length).toBe(5);
+    await chooseFilter('genre-filter', 'Fantasy');
+    await openDropdown('genre-filter');
+    await clickFilterAction('Clear selection');
+    expect(element.querySelectorAll('.filter-option input:checked').length).toBe(0);
+    expect(rowIds()).toEqual(['alpha', 'delta', 'zulu']);
+    await clickFilterAction('Apply filters');
+    expect(rowIds()).toEqual([]);
+    expect(element.querySelector('#genre-summary')?.textContent).toBe('None selected');
+    await chooseFilter('genre-filter', 'All genres');
+    await openDropdown('read-filter');
+    await clickFilterAction('Clear selection');
+    await toggleOption('Read');
+    await toggleOption('Unread');
+    await clickFilterAction('Apply filters');
+    expect(rowIds().length).toBe(5);
+    await openDropdown('shelf-filter');
+    await clickFilterAction('Clear selection');
+    await toggleOption('Study');
+    await toggleOption('Living room');
+    await clickFilterAction('Apply filters');
+    expect(rowIds()).toEqual(['alpha', 'beta', 'delta', 'zulu']);
+  });
+
+  it('discards unsubmitted changes when dismissed or another filter is opened', async () => {
+    http.expectOne('/api/library/books').flush(filterBooks);
+    await fixture.whenStable();
+    await chooseFilter('genre-filter', 'Mystery');
+    await openDropdown('genre-filter');
+    await toggleOption('Fantasy');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await fixture.whenStable();
+    expect(element.querySelector('.filter-panel')).toBeNull();
+    expect(document.activeElement?.id).toBe('genre-filter');
+    await openDropdown('genre-filter');
+    expect(element.querySelectorAll('.filter-option input:checked').length).toBe(1);
+    await toggleOption('Fantasy');
+    await openDropdown('shelf-filter');
+    expect(rowIds()).toEqual(['beta']);
+    document.body.click();
+    await fixture.whenStable();
+    expect(element.querySelector('.filter-panel')).toBeNull();
+    await openDropdown('genre-filter');
+    expect(element.querySelectorAll('.filter-option input:checked').length).toBe(1);
   });
 
   it('shows no matches, keeps the controls available, and clears filters without changing sorting', async () => {
