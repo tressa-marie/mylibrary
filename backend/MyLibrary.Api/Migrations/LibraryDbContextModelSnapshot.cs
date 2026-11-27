@@ -135,6 +135,9 @@ namespace MyLibrary.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GoalType")
+                        .IsUnique();
+
                     b.ToTable("Goals", null, t =>
                         {
                             t.HasCheckConstraint("CK_Goals_CompletedCount", "\"CompletedCount\" IS NULL OR (\"CompletedCount\" >= 0 AND \"CompletedCount\" <= 2147483647 AND ((\"GoalType\" = 'ReadBookPercentage' AND \"CompletedCount\" <= 100) OR (\"GoalType\" <> 'ReadBookPercentage' AND \"CompletedCount\" = trunc(\"CompletedCount\"))))");

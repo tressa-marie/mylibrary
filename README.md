@@ -336,13 +336,21 @@ node backend/tests/shelves-api-test.mjs
 
 ## Goals API
 
+The library can have only one goal of each type, regardless of date range.
+Selecting an existing type shows an error and blocks Next. The API returns
+`409 Conflict` with a `goalType` field error for duplicate creation, including
+concurrent requests. The `UniqueGoalTypes` migration adds a unique database index.
+Delete the existing goal to create a new one of that type. Existing duplicate
+goals must be resolved before applying this migration; it never deletes goals automatically.
+
 The Goals page displays a Chart.js progress card for each saved goal. Books and
 Pages count finished, non-DNF books with a `dateRead` within the goal's inclusive
 date range; Pages sums their known page counts. Book Buying Limit counts library
 copies with a `dateAcquired` in that range. Undated copies do not contribute to
 these dated goals. Library Read Percentage uses the whole saved library and
-counts both Read and DNF as read, counting each copy once. Its progress is the
-current library read percentage divided by the goal's target percentage.
+counts both Read and DNF as read, counting each copy once. Its bar and overlaid
+label show the current read percentage directly. The target percentage appears
+at the top right and is marked by a red line on the bar.
 Buying-limit bars turn red strictly above 80% of the limit. Bars cap their visual
 fill at 100%, while counts and percentage labels can show exceeded targets.
 Progress currently uses saved library records.

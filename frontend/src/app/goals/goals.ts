@@ -1,4 +1,4 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -52,6 +52,12 @@ export class Goals implements OnInit {
     },
   ] as const;
   protected readonly selectedType = signal<Goal['goalType'] | null>(null);
+  protected readonly goalTypeError = computed(() => {
+    const type = this.selectedType();
+    if (!type || !this.goals().some((goal) => goal.goalType === type)) return '';
+    const label = this.goalTypes.find((option) => option.value === type)!.label;
+    return `You already have a ${label} goal. Edit or delete it before creating another.`;
+  });
   protected readonly step = signal<'type' | 'details'>('type');
   protected countDrafts = {
     BookCount: { num: null as number | null, startDate: '', endDate: '' },
@@ -114,7 +120,7 @@ export class Goals implements OnInit {
   }
 
   protected open(dialog: HTMLDialogElement) {
-    if (this.saving()) return;
+    if (this.saving() || this.goalsState() !== 'ready') return;
     this.saveError.set('');
     this.fieldErrors.set([]);
     this.successMessage.set('');
@@ -131,7 +137,7 @@ export class Goals implements OnInit {
 
   protected next(event: Event, title: HTMLElement) {
     event.preventDefault();
-    if (!this.selectedType()) return;
+    if (!this.selectedType() || this.goalTypeError() || this.goalsState() !== 'ready') return;
     this.saveError.set('');
     this.fieldErrors.set([]);
     this.step.set('details');
@@ -169,6 +175,10 @@ export class Goals implements OnInit {
     const goalType = this.selectedType();
     const draft = this.countDraft;
     if (!goalType || draft.num === null) return;
+    if (this.goalTypeError()) {
+      this.saveError.set(this.goalTypeError());
+      return;
+    }
     if (!Number.isInteger(draft.num)) {
       this.saveError.set('Enter a whole number for your goal target.');
       element.querySelector<HTMLInputElement>('#goal-count')?.focus();
@@ -203,11 +213,12 @@ export class Goals implements OnInit {
           this.saveError.set(
             'Your goal could not be saved. Your entries are still here. Please try again.',
           );
-          if (error.status === 400 && error.error?.errors) {
+          if ((error.status === 400 || error.status === 409) && error.error?.errors) {
             this.fieldErrors.set(
               Object.values(error.error.errors as Record<string, string[]>).flat(),
             );
           }
+          if (error.status === 409) this.loadGoals();
         },
       });
   }

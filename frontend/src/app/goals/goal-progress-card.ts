@@ -45,6 +45,10 @@ import { goalProgress } from './goal-progress';
         </div>
         @if (goal().goalType !== 'ReadBookPercentage') {
           <span class="goal-count">{{ progress().completed }}/{{ goal().num }}</span>
+        } @else {
+          <span class="goal-count" [attr.aria-label]="'Goal: ' + goal().num + '%'"
+            >{{ goal().num }}%</span
+          >
         }
       </header>
       <div
@@ -54,9 +58,21 @@ import { goalProgress } from './goal-progress';
         aria-valuemin="0"
         aria-valuemax="100"
         [attr.aria-valuenow]="progress().fill"
-        [attr.aria-valuetext]="progress().percentage + '% of target'"
+        [attr.aria-valuetext]="
+          goal().goalType === 'ReadBookPercentage'
+            ? progress().percentage + '% read; goal ' + goal().num + '%'
+            : progress().percentage + '% of target'
+        "
       >
         <canvas #canvas aria-hidden="true"></canvas>
+        @if (goal().goalType === 'ReadBookPercentage') {
+          <span
+            class="goal-marker"
+            [style.left.%]="goal().num"
+            [title]="'Goal: ' + goal().num + '%'"
+            aria-hidden="true"
+          ></span>
+        }
         <span class="percentage">{{ progress().percentage }}%</span>
       </div>
     </article>
@@ -127,6 +143,17 @@ import { goalProgress } from './goal-progress';
       font-weight: 600;
       text-shadow: 0 1px 2px #0008;
       pointer-events: none;
+      z-index: 2;
+    }
+    .goal-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      transform: translateX(-50%);
+      background: #d32626;
+      box-shadow: 0 0 0 1px #fffdf8;
+      z-index: 1;
     }
   `,
 })
@@ -157,7 +184,7 @@ export class GoalProgressCard {
             },
             {
               data: [100 - progress.fill],
-              backgroundColor: '#625f57',
+              backgroundColor: '#a7a294',
               borderWidth: 0,
               barPercentage: 1,
               categoryPercentage: 1,

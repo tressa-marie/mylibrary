@@ -77,6 +77,10 @@
               [value]="type.value"
               [checked]="selectedType() === type.value"
               (change)="selectedType.set(type.value)"
+              [attr.aria-invalid]="selectedType() === type.value && goalTypeError() ? 'true' : null"
+              [attr.aria-describedby]="
+                selectedType() === type.value && goalTypeError() ? 'goal-type-error' : null
+              "
               required
             />
             <span class="goal-card">
@@ -86,9 +90,17 @@
           </label>
         }
       </fieldset>
+      @if (goalTypeError()) {
+        <p id="goal-type-error" class="field-error" role="alert">{{ goalTypeError() }}</p>
+      }
       <div class="dialog-actions">
         <button class="secondary-button" type="button" (click)="goalDialog.close()">Cancel</button>
-        <button type="submit" [disabled]="!selectedType()">Next</button>
+        <button
+          type="submit"
+          [disabled]="!selectedType() || !!goalTypeError() || goalsState() !== 'ready'"
+        >
+          Next
+        </button>
       </div>
     </form>
   } @else {

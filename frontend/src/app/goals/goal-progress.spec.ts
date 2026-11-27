@@ -48,12 +48,12 @@ describe('goal progress', () => {
       book({ dateRead: '2026-01-15', pageCount: 500 }),
     ];
     expect(goalProgress(goal('BookCount', 5), books)).toMatchObject({
-      title: 'Books',
+      title: 'Books Read',
       completed: 3,
       percentage: 60,
     });
     expect(goalProgress(goal('PageCount', 500), books)).toMatchObject({
-      title: 'Pages',
+      title: 'Pages Read',
       completed: 300,
       percentage: 60,
     });
@@ -69,9 +69,14 @@ describe('goal progress', () => {
     expect(result).toMatchObject({
       title: 'Library Read Percentage',
       completed: 75,
-      percentage: 100,
+      percentage: 75,
+      fill: 75,
     });
     expect(goalProgress(goal('ReadBookPercentage', 75), []).percentage).toBe(0);
+    expect(goalProgress(goal('ReadBookPercentage', 0), []).percentage).toBe(0);
+    expect(
+      goalProgress({ ...goal('ReadBookPercentage', 90), completedCount: 66.7 }, []).percentage,
+    ).toBe(66.7);
   });
 
   for (const [count, percentage, color] of [

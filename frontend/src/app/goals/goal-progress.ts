@@ -18,11 +18,19 @@ export function goalProgress(goal: Goal, books: LibraryBookSummary[]) {
   const completed = goal.completedCount ?? calculated;
   const buying = goal.goalType === 'BuyBookCount';
   const percentage =
-    goal.num > 0 ? (completed / goal.num) * 100 : buying ? (completed > 0 ? 100 : 0) : 100;
+    goal.goalType === 'ReadBookPercentage'
+      ? completed
+      : goal.num > 0
+        ? (completed / goal.num) * 100
+        : buying
+          ? completed > 0
+            ? 100
+            : 0
+          : 100;
   return {
     title: {
-      BookCount: 'Books',
-      PageCount: 'Pages',
+      BookCount: 'Books Read',
+      PageCount: 'Pages Read',
       ReadBookPercentage: 'Library Read Percentage',
       BuyBookCount: 'Book Buying Limit',
     }[goal.goalType],

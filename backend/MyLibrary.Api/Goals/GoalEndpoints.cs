@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using MyLibrary.Api.Data;
 using MyLibrary.Api.Domain;
+using Npgsql;
 
 namespace MyLibrary.Api.Goals;
 
@@ -22,6 +23,7 @@ public static class GoalEndpoints
         {
             var errors = request.Validate();
             if (errors.Count > 0) return Results.ValidationProblem(errors);
+            if (await db.Goals.AnyAsync(x => x.GoalType == request.GoalType, ct)) return DuplicateGoal();
             var goal = new Goal();
             request.ApplyTo(goal);
             db.Goals.Add(goal);
@@ -49,12 +51,22 @@ public static class GoalEndpoints
         });
     }
 
+    private static IResult DuplicateGoal() => Results.ValidationProblem(new Dictionary<string, string[]> {
+        ["goalType"] = ["You already have a goal of this type. Edit or delete it before creating another."]
+    }, statusCode: StatusCodes.Status409Conflict);
+
     private static async Task<IResult> SaveAsync(LibraryDbContext db, IResult success, CancellationToken ct)
     {
         try
         {
             await db.SaveChangesAsync(ct);
             return success;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException {
+            SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "IX_Goals_GoalType"
+        })
+        {
+            return DuplicateGoal();
         }
         catch (DbUpdateException ex)
         {

@@ -159,10 +159,8 @@ try
             await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = forbiddenType, num = 12, includeNonLibraryBooks = true }, HttpStatusCode.BadRequest);
             Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, path, null, HttpStatusCode.OK), enabledGoal), "Rejected type change modified saved data.");
         }
-        var created = await Request(HttpMethod.Post, route, enabled, HttpStatusCode.Created);
-        Check(created!["includeNonLibraryBooks"]!.GetValue<bool>(), "Allowed create did not enable outside books.");
-        Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, $"{route}/{created["id"]}", null, HttpStatusCode.OK), created), "Flag did not persist on creation.");
-        await Request(HttpMethod.Delete, $"{route}/{created["id"]}", null, HttpStatusCode.NoContent);
+        var duplicate = await Request(HttpMethod.Post, route, enabled, HttpStatusCode.Conflict);
+        Check(duplicate!["errors"]!["goalType"] is not null, "Duplicate type did not return a goalType error.");
     }
     foreach (var original in saved)
     {
@@ -202,6 +200,23 @@ try
         await Request(HttpMethod.Delete, path, null, HttpStatusCode.NotFound);
     }
     Check((await Request(HttpMethod.Get, route, null, HttpStatusCode.OK))!.AsArray().Count == 0, "Delete did not persist.");
+    foreach (var type in Enum.GetNames<GoalType>())
+    {
+        var payload = new { startDate = "2028-01-01", endDate = "2028-12-31", goalType = type, num = 12 };
+        var responses = await Task.WhenAll(client.PostAsJsonAsync(route, payload), client.PostAsJsonAsync(route, payload));
+        try
+        {
+            Check(responses.Count(x => x.StatusCode == HttpStatusCode.Created) == 1
+                && responses.Count(x => x.StatusCode == HttpStatusCode.Conflict) == 1,
+                "Concurrent creates must produce one goal and one conflict.");
+            var conflict = JsonNode.Parse(await responses.Single(x => x.StatusCode == HttpStatusCode.Conflict).Content.ReadAsStringAsync())!;
+            Check(conflict["errors"]!["goalType"] is not null, "Race conflict did not return the goal type error.");
+            var newGoal = JsonNode.Parse(await responses.Single(x => x.StatusCode == HttpStatusCode.Created).Content.ReadAsStringAsync())!;
+            await Request(HttpMethod.Post, route, new { startDate = "2029-01-01", endDate = "2029-12-31", goalType = type, num = 20 }, HttpStatusCode.Conflict);
+            await Request(HttpMethod.Delete, $"{route}/{newGoal["id"]}", null, HttpStatusCode.NoContent);
+        }
+        finally { foreach (var response in responses) response.Dispose(); }
+    }
     await app.StopAsync();
     Console.WriteLine("PASS: PostgreSQL migration, all goal types, CRUD, validation, persistence, and missing records.");
 }

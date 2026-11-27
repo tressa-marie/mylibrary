@@ -64,7 +64,7 @@ describe('Edit goal dialog', () => {
   }
 
   it('prefills values, fixes the type, saves a manual count and dates, and restores focus', async () => {
-    expect(dialog.querySelector('h2')?.textContent).toBe('Edit Books');
+    expect(dialog.querySelector('h2')?.textContent).toBe('Edit Books Read');
     expect(dialog.querySelector<HTMLInputElement>('#edit-goal-count')!.value).toBe('1');
     expect(dialog.querySelector<HTMLInputElement>('[name="useCalculated"]')!.checked).toBe(true);
     expect(dialog.querySelector('select, [name="goalType"]')).toBeNull();

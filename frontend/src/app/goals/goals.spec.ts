@@ -43,6 +43,90 @@ describe('Goals', () => {
   });
   afterEach(() => http.verify());
 
+  for (const type of ['BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage']) {
+    it(`blocks selecting an existing ${type} goal and permits an available type`, async () => {
+      fixture.destroy();
+      fixture = TestBed.createComponent(Goals);
+      await fixture.whenStable();
+      http.expectOne('/api/goals').flush([
+        {
+          id: 'existing',
+          goalType: type,
+          num: 20,
+          startDate: '2026-01-01',
+          endDate: '2026-12-31',
+          includeNonLibraryBooks: false,
+        },
+      ]);
+      http.expectOne('/api/library/books').flush([]);
+      await fixture.whenStable();
+      element = fixture.nativeElement;
+      dialog = element.querySelector('dialog')!;
+      dialog.showModal = () => dialog.setAttribute('open', '');
+      await open();
+      dialog.querySelector<HTMLInputElement>(`input[value="${type}"]`)!.click();
+      await fixture.whenStable();
+      expect(dialog.querySelector('#goal-type-error')?.textContent).toContain('You already have a');
+      expect(dialog.querySelector('#goal-type-error')?.textContent).toContain('Edit or delete it');
+      expect(dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+      dialog
+        .querySelector('form')!
+        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await fixture.whenStable();
+      expect(dialog.querySelector('.count-goal-form')).toBeNull();
+      const available = type === 'PageCount' ? 'BookCount' : 'PageCount';
+      dialog.querySelector<HTMLInputElement>(`input[value="${available}"]`)!.click();
+      await fixture.whenStable();
+      expect(dialog.querySelector('#goal-type-error')).toBeNull();
+      expect(dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(
+        false,
+      );
+    });
+  }
+
+  it('shows backend duplicate errors when another session creates the selected type', async () => {
+    await open();
+    dialog.querySelector<HTMLInputElement>('input[value="BookCount"]')!.click();
+    await fixture.whenStable();
+    dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    await fixture.whenStable();
+    for (const [id, value] of [
+      ['goal-count', '12'],
+      ['goal-start-date', '2026-01-01'],
+      ['goal-end-date', '2026-12-31'],
+    ]) {
+      const input = dialog.querySelector<HTMLInputElement>(`#${id}`)!;
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
+    await fixture.whenStable();
+    dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+    http.expectOne({ method: 'POST', url: '/api/goals' }).flush(
+      {
+        errors: {
+          goalType: [
+            'You already have a goal of this type. Edit or delete it before creating another.',
+          ],
+        },
+      },
+      { status: 409, statusText: 'Conflict' },
+    );
+    http
+      .expectOne({ method: 'GET', url: '/api/goals' })
+      .flush([{ id: 'other-session', goalType: 'BookCount', num: 20 }]);
+    http.expectOne('/api/library/books').flush([]);
+    await fixture.whenStable();
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('[role="alert"]')?.textContent).toContain(
+      'You already have a goal of this type',
+    );
+    expect(dialog.querySelector<HTMLInputElement>('#goal-count')!.value).toBe('12');
+    dialog.querySelector<HTMLButtonElement>('.dialog-actions .secondary-button')!.click();
+    await fixture.whenStable();
+    expect(dialog.querySelector('#goal-type-error')?.textContent).toContain('You already have a');
+    expect(dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+  });
+
   it('opens editing from the icon right of the title, updates progress, and removes deleted goals', async () => {
     fixture.destroy();
     fixture = TestBed.createComponent(Goals);
@@ -94,6 +178,16 @@ describe('Goals', () => {
     await fixture.whenStable();
     expect(page.querySelector('app-goal-progress-card')).toBeNull();
     expect(page.querySelector('.empty-goals h2')?.textContent).toBe('No Goals');
+    const createDialog = page.querySelector<HTMLDialogElement>('dialog')!;
+    createDialog.showModal = () => createDialog.setAttribute('open', '');
+    page.querySelector<HTMLButtonElement>('.page-header button')!.click();
+    await fixture.whenStable();
+    createDialog.querySelector<HTMLInputElement>('input[value="BookCount"]')!.click();
+    await fixture.whenStable();
+    expect(createDialog.querySelector('#goal-type-error')).toBeNull();
+    expect(createDialog.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(
+      false,
+    );
   });
 
   it('renders the four goal cards with Chart.js progress, counts, and the buying warning', async () => {
@@ -105,7 +199,7 @@ describe('Goals', () => {
       types.map((goalType, index) => ({
         id: `goal-${index}`,
         goalType,
-        num: [5, 500, 100, 3][index],
+        num: [5, 500, 80, 3][index],
         startDate: '2026-01-01',
         endDate: '2026-01-31',
         includeNonLibraryBooks: false,
@@ -124,17 +218,26 @@ describe('Goals', () => {
       fixture.nativeElement.querySelectorAll('app-goal-progress-card'),
     ) as HTMLElement[];
     expect(cards.map((card) => card.querySelector('h2')?.textContent)).toEqual([
-      'Books',
-      'Pages',
+      'Books Read',
+      'Pages Read',
       'Library Read Percentage',
       'Book Buying Limit',
     ]);
     expect(cards.map((card) => card.querySelector('.goal-count')?.textContent ?? null)).toEqual([
       '2/5',
       '250/500',
-      null,
+      '80%',
       '3/3',
     ]);
+    const marker = cards[2].querySelector<HTMLElement>('.goal-marker')!;
+    expect(marker.style.left).toBe('80%');
+    expect(cards[2].querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow')).toBe(
+      '75',
+    );
+    expect(cards[2].querySelector('[role="progressbar"]')?.getAttribute('aria-valuetext')).toBe(
+      '75% read; goal 80%',
+    );
+    expect(cards[0].querySelector('.goal-marker')).toBeNull();
     expect(cards.map((card) => card.querySelector('.percentage')?.textContent)).toEqual([
       '40%',
       '50%',
@@ -304,7 +407,9 @@ describe('Goals', () => {
       'Commit to reading a percentage of your library',
     ]);
     expect(
-      Array.from(dialog.querySelectorAll('.dialog-actions button'), (button) => button.textContent),
+      Array.from(dialog.querySelectorAll('.dialog-actions button'), (button) =>
+        button.textContent?.trim(),
+      ),
     ).toEqual(['Cancel', 'Next']);
     const next = dialog.querySelector<HTMLButtonElement>('button[type="submit"]')!;
     expect(next.disabled).toBe(true);

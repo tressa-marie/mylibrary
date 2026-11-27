@@ -18,6 +18,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
         modelBuilder.Entity<Goal>(goal =>
         {
             goal.Property(x => x.GoalType).HasConversion<string>().HasMaxLength(32);
+            goal.HasIndex(x => x.GoalType).IsUnique();
             goal.Property(x => x.IncludeNonLibraryBooks).HasDefaultValue(false);
             goal.Property(x => x.CompletedCount).HasPrecision(14, 2);
             goal.ToTable("Goals", table =>
