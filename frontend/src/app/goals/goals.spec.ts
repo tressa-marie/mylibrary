@@ -17,6 +17,8 @@ describe('Goals', () => {
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Goals);
     await fixture.whenStable();
+    http.expectOne('/api/goals').flush([]);
+    await fixture.whenStable();
     element = fixture.nativeElement;
     dialog = element.querySelector('dialog')!;
     dialog.showModal = () => dialog.setAttribute('open', '');
@@ -26,6 +28,51 @@ describe('Goals', () => {
     };
   });
   afterEach(() => http.verify());
+
+  it('explains how to create goals when the saved goals list is empty', () => {
+    expect(element.querySelector('.empty-goals h2')?.textContent).toBe('No Goals');
+    expect(element.querySelector('.empty-goals')?.textContent).toContain('Create New Goal');
+    expect(element.querySelector('.empty-goals')?.textContent).toContain(
+      'Your goals will appear here.',
+    );
+  });
+
+  it('does not show No Goals while loading or when saved goals exist', async () => {
+    fixture.destroy();
+    fixture = TestBed.createComponent(Goals);
+    await fixture.whenStable();
+    const page: HTMLElement = fixture.nativeElement;
+    expect(page.querySelector('.empty-goals')).toBeNull();
+    http
+      .expectOne('/api/goals')
+      .flush([
+        {
+          id: 'goal-1',
+          goalType: 'BookCount',
+          num: 12,
+          startDate: '2026-01-01',
+          endDate: '2026-12-31',
+          includeNonLibraryBooks: false,
+        },
+      ]);
+    await fixture.whenStable();
+    expect(page.querySelector('.empty-goals')).toBeNull();
+  });
+
+  it('shows a retry instead of No Goals if fetching goals fails', async () => {
+    fixture.destroy();
+    fixture = TestBed.createComponent(Goals);
+    await fixture.whenStable();
+    http.expectOne('/api/goals').flush({}, { status: 500, statusText: 'Server error' });
+    await fixture.whenStable();
+    const page: HTMLElement = fixture.nativeElement;
+    expect(page.querySelector('.empty-goals')).toBeNull();
+    expect(page.querySelector('[role="alert"]')?.textContent).toContain('Could not load goals');
+    page.querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+    http.expectOne('/api/goals').flush([]);
+    await fixture.whenStable();
+    expect(page.querySelector('.empty-goals h2')?.textContent).toBe('No Goals');
+  });
 
   async function open() {
     element.querySelector<HTMLButtonElement>('.page-header button')!.click();

@@ -1,7 +1,8 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { OwnedBookService } from '../owned-books/services/owned-book.service';
+import { Goal, GoalService } from './goal.service';
 
 @Component({
   selector: 'app-goals',
@@ -9,9 +10,12 @@ import { OwnedBookService } from '../owned-books/services/owned-book.service';
   templateUrl: './goals.html',
   styleUrl: './goals.scss',
 })
-export class Goals {
+export class Goals implements OnInit {
+  private readonly goalService = inject(GoalService);
   private readonly library = inject(OwnedBookService);
   private readonly destroyRef = inject(DestroyRef);
+  protected readonly goals = signal<Goal[]>([]);
+  protected readonly goalsState = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly currentReadPercentage = signal<number | null>(null);
   protected readonly percentageState = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly goalTypes = [
@@ -44,6 +48,24 @@ export class Goals {
     BuyBookCount: { num: null as number | null, startDate: '', endDate: '' },
     ReadBookPercentage: { num: null as number | null, startDate: '', endDate: '' },
   };
+
+  ngOnInit() {
+    this.loadGoals();
+  }
+
+  protected loadGoals() {
+    this.goalsState.set('loading');
+    this.goalService
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (goals) => {
+          this.goals.set(goals);
+          this.goalsState.set('ready');
+        },
+        error: () => this.goalsState.set('error'),
+      });
+  }
 
   protected get countDraft() {
     if (this.selectedType() === 'ReadBookPercentage') return this.countDrafts.ReadBookPercentage;

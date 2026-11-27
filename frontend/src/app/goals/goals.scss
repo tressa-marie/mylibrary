@@ -8,6 +8,20 @@
   gap: 1.5rem;
   padding: 3rem 0 2rem;
 }
+.message {
+  padding: 2rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  text-align: center;
+}
+.message h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+.message p {
+  color: #625f57;
+}
 h1 {
   margin: 0;
   font:
