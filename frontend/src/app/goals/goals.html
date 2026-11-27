@@ -1,0 +1,22 @@
+<section aria-labelledby="goals-title">
+  <header class="page-header">
+    <h1 id="goals-title">Goals</h1>
+    <button #createButton type="button" (click)="goalDialog.showModal()">Create New Goal</button>
+  </header>
+</section>
+
+<dialog #goalDialog aria-labelledby="create-goal-title" (close)="createButton.focus()">
+  <div class="dialog-header">
+    <h2 id="create-goal-title">Create New Goal</h2>
+    <button
+      class="close-button"
+      type="button"
+      aria-label="Close Create New Goal"
+      (click)="goalDialog.close()"
+      autofocus
+    >
+      &times;
+    </button>
+  </div>
+  <div class="dialog-body"></div>
+</dialog>

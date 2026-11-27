@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem 0 2rem;
+}
+h1 {
+  margin: 0;
+  font:
+    500 clamp(2rem, 5vw, 3rem)/1.15 'Playfair Display',
+    Georgia,
+    serif;
+}
+h2 {
+  margin: 0;
+  font:
+    500 1.5rem Georgia,
+    serif;
+}
+button {
+  border: 1px solid #254d3c;
+  border-radius: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  background: #254d3c;
+  color: #fffdf8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  background: #193829;
+}
+dialog {
+  width: min(32rem, calc(100% - 2rem));
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding: 1.75rem;
+  border: 1px solid #dedbd1;
+  border-radius: 0.75rem;
+  background: #fffdf8;
+  color: #252e26;
+  box-shadow: 0 1rem 4rem #0004;
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.close-button {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: #254d3c;
+  border-color: transparent;
+  font-size: 1.75rem;
+}
+.close-button:hover {
+  background: #eae5da;
+}
+.dialog-body {
+  min-height: 12rem;
+}
+@media (max-width: 600px) {
+  .page-header {
+    gap: 0.75rem;
+    padding-top: 2rem;
+  }
+  .page-header button {
+    padding: 0.65rem 0.8rem;
+  }
+  dialog {
+    padding: 1.25rem;
+  }
+}
