@@ -8,6 +8,7 @@ public sealed class SaveGoalRequest
     public DateOnly? EndDate { get; set; }
     public GoalType? GoalType { get; set; }
     public int? Num { get; set; }
+    public bool IncludeNonLibraryBooks { get; set; }
 
     public Dictionary<string, string[]> Validate()
     {
@@ -21,6 +22,8 @@ public sealed class SaveGoalRequest
         if (Num is null || Num < 0) errors["num"] = ["Enter a nonnegative integer target."];
         else if (GoalType == Domain.GoalType.ReadBookPercentage && Num > 100)
             errors["num"] = ["Enter a percentage from 0 to 100."];
+        if (IncludeNonLibraryBooks && GoalType is not (Domain.GoalType.BookCount or Domain.GoalType.PageCount))
+            errors["includeNonLibraryBooks"] = ["Only BookCount and PageCount goals can include books outside your library."];
         return errors;
     }
 
@@ -31,5 +34,6 @@ public sealed class SaveGoalRequest
         goal.EndDate = EndDate!.Value;
         goal.GoalType = GoalType!.Value;
         goal.Num = Num!.Value;
+        goal.IncludeNonLibraryBooks = IncludeNonLibraryBooks;
     }
 }

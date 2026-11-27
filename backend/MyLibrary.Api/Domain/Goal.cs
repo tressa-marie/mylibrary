@@ -18,4 +18,5 @@ public sealed class Goal
     public DateOnly EndDate { get; set; }
     public GoalType GoalType { get; set; }
     public int Num { get; set; }
+    public bool IncludeNonLibraryBooks { get; set; }
 }

@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using MyLibrary.Api.Data;
 using MyLibrary.Api.Domain;
 using MyLibrary.Api.Goals;
@@ -35,6 +36,14 @@ valid.Num = 101;
 Check(valid.Validate().ContainsKey("num"), "Percentage over 100 accepted.");
 valid.Num = 100;
 Check(valid.Validate().Count == 0, "100 percent rejected.");
+valid.IncludeNonLibraryBooks = true;
+foreach (var type in Enum.GetValues<GoalType>())
+{
+    valid.GoalType = type;
+    var allowed = type is GoalType.BookCount or GoalType.PageCount;
+    Check(valid.Validate().ContainsKey("includeNonLibraryBooks") != allowed,
+        $"Incorrect outside-library validation for {type}.");
+}
 Console.WriteLine("PASS: goal request validation.");
 if (args.Contains("--validation-only")) return;
 
@@ -61,7 +70,17 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<LibraryDbContext>();
+        await db.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync("20261127043848_AddGoals");
+        var legacyId = Guid.NewGuid();
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            INSERT INTO "Goals" ("Id", "StartDate", "EndDate", "GoalType", "Num")
+            VALUES ({legacyId}, {new DateOnly(2026, 1, 1)}, {new DateOnly(2026, 12, 31)}, 'BookCount', 12)
+            """);
         await db.Database.MigrateAsync();
+        var legacyGoal = await db.Goals.SingleAsync(x => x.Id == legacyId);
+        Check(!legacyGoal.IncludeNonLibraryBooks && legacyGoal.Num == 12, "Migration did not preserve existing goals with the flag disabled.");
+        db.Goals.Remove(legacyGoal);
+        await db.SaveChangesAsync();
         Check(!db.Database.HasPendingModelChanges(), "Migration does not match model.");
     }
     await app.StartAsync();
@@ -89,6 +108,7 @@ try
         Check(id != Guid.Empty, "Empty ID.");
         Check(response.Headers.Location?.ToString() == $"{route}/{id}", "Incorrect Location header.");
         Check(goal["goalType"]!.GetValue<string>() == type && goal["num"]!.GetValue<int>() == 12, "Incorrect fields.");
+        Check(!goal["includeNonLibraryBooks"]!.GetValue<bool>(), "Omitted flag must default to false.");
         Check(goal["startDate"]!.GetValue<string>() == payload.startDate && goal["endDate"]!.GetValue<string>() == payload.endDate, "Dates changed.");
         Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, $"{route}/{id}", null, HttpStatusCode.OK), goal), "Read differs from create.");
         saved.Add(goal);
@@ -100,17 +120,38 @@ try
         new { startDate = "invalid", endDate = "2026-12-31", goalType = "BookCount", num = 1 },
         new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = "Unknown", num = 1 },
         new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = 999, num = 1 },
-        new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = "PageCount", num = 1.5 }
+        new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = "PageCount", num = 1.5 },
+        new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = "BuyBookCount", num = 12, includeNonLibraryBooks = true },
+        new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = "ReadBookPercentage", num = 50, includeNonLibraryBooks = true }
     })
     {
         await Request(HttpMethod.Post, route, invalid, HttpStatusCode.BadRequest);
         await Request(HttpMethod.Put, $"{route}/{saved[0]["id"]}", invalid, HttpStatusCode.BadRequest);
     }
     Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, $"{route}/{saved[0]["id"]}", null, HttpStatusCode.OK), saved[0]), "Invalid PUT changed saved data.");
+    foreach (var type in new[] { "BookCount", "PageCount" })
+    {
+        var goal = saved.Single(x => x["goalType"]!.GetValue<string>() == type);
+        var path = $"{route}/{goal["id"]}";
+        var enabled = new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = type, num = 12, includeNonLibraryBooks = true };
+        var enabledGoal = await Request(HttpMethod.Put, path, enabled, HttpStatusCode.OK);
+        Check(enabledGoal!["includeNonLibraryBooks"]!.GetValue<bool>(), "Allowed update did not enable outside books.");
+        Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, path, null, HttpStatusCode.OK), enabledGoal), "Flag did not persist on update.");
+        foreach (var forbiddenType in new[] { "BuyBookCount", "ReadBookPercentage" })
+        {
+            await Request(HttpMethod.Put, path, new { startDate = "2026-01-01", endDate = "2026-12-31", goalType = forbiddenType, num = 12, includeNonLibraryBooks = true }, HttpStatusCode.BadRequest);
+            Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, path, null, HttpStatusCode.OK), enabledGoal), "Rejected type change modified saved data.");
+        }
+        var created = await Request(HttpMethod.Post, route, enabled, HttpStatusCode.Created);
+        Check(created!["includeNonLibraryBooks"]!.GetValue<bool>(), "Allowed create did not enable outside books.");
+        Check(JsonNode.DeepEquals(await Request(HttpMethod.Get, $"{route}/{created["id"]}", null, HttpStatusCode.OK), created), "Flag did not persist on creation.");
+        await Request(HttpMethod.Delete, $"{route}/{created["id"]}", null, HttpStatusCode.NoContent);
+    }
     var updated = await Request(HttpMethod.Put, $"{route}/{saved[0]["id"]}",
         new { startDate = "2027-02-01", endDate = "2027-02-01", goalType = "ReadBookPercentage", num = 100 }, HttpStatusCode.OK);
     Check(updated!["id"]!.GetValue<string>() == saved[0]["id"]!.GetValue<string>(), "Update changed ID.");
     Check(updated["num"]!.GetValue<int>() == 100 && updated["goalType"]!.GetValue<string>() == "ReadBookPercentage", "Update lost values.");
+    Check(!updated["includeNonLibraryBooks"]!.GetValue<bool>(), "Omitting the flag on PUT must reset it to false.");
     // A fresh context and connection verify values were persisted, independently of HTTP tracking.
     await using (var db = new LibraryDbContext(new DbContextOptionsBuilder<LibraryDbContext>().UseNpgsql(scopedConnection.ConnectionString).Options))
     {

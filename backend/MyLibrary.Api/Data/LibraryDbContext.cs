@@ -18,6 +18,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
         modelBuilder.Entity<Goal>(goal =>
         {
             goal.Property(x => x.GoalType).HasConversion<string>().HasMaxLength(32);
+            goal.Property(x => x.IncludeNonLibraryBooks).HasDefaultValue(false);
             goal.ToTable("Goals", table =>
             {
                 table.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
@@ -26,6 +27,8 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
                     "\"GoalType\" IN ('BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage')");
                 table.HasCheckConstraint("CK_Goals_Percentage",
                     "\"GoalType\" <> 'ReadBookPercentage' OR \"Num\" <= 100");
+                table.HasCheckConstraint("CK_Goals_IncludeNonLibraryBooks",
+                    "NOT \"IncludeNonLibraryBooks\" OR \"GoalType\" IN ('BookCount', 'PageCount')");
             });
         });
         modelBuilder.Entity<Book>(book =>

@@ -118,6 +118,11 @@ namespace MyLibrary.Api.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<bool>("IncludeNonLibraryBooks")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<int>("Num")
                         .HasColumnType("integer");
 
@@ -131,6 +136,8 @@ namespace MyLibrary.Api.Migrations
                             t.HasCheckConstraint("CK_Goals_Dates", "\"EndDate\" >= \"StartDate\"");
 
                             t.HasCheckConstraint("CK_Goals_GoalType", "\"GoalType\" IN ('BookCount', 'PageCount', 'BuyBookCount', 'ReadBookPercentage')");
+
+                            t.HasCheckConstraint("CK_Goals_IncludeNonLibraryBooks", "NOT \"IncludeNonLibraryBooks\" OR \"GoalType\" IN ('BookCount', 'PageCount')");
 
                             t.HasCheckConstraint("CK_Goals_Num", "\"Num\" >= 0");
 

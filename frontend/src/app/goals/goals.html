@@ -1,22 +1,131 @@
 <section aria-labelledby="goals-title">
   <header class="page-header">
     <h1 id="goals-title">Goals</h1>
-    <button #createButton type="button" (click)="goalDialog.showModal()">Create New Goal</button>
+    <button #createButton type="button" (click)="open(goalDialog)">Create New Goal</button>
   </header>
 </section>
 
 <dialog #goalDialog aria-labelledby="create-goal-title" (close)="createButton.focus()">
-  <div class="dialog-header">
-    <h2 id="create-goal-title">Create New Goal</h2>
-    <button
-      class="close-button"
-      type="button"
-      aria-label="Close Create New Goal"
-      (click)="goalDialog.close()"
-      autofocus
-    >
-      &times;
-    </button>
-  </div>
-  <div class="dialog-body"></div>
+  <h2
+    #dialogTitle
+    id="create-goal-title"
+    tabindex="-1"
+    [class.details-title]="step() === 'details'"
+  >
+    {{ step() === 'type' ? 'Select A Goal Type' : 'Set Your Goal' }}
+  </h2>
+  @if (step() === 'type') {
+    <form (submit)="next($event, dialogTitle)">
+      <fieldset class="goal-types">
+        <legend class="visually-hidden">Goal type</legend>
+        @for (type of goalTypes; track type.value) {
+          <label class="goal-option">
+            <input
+              type="radio"
+              name="goalType"
+              [value]="type.value"
+              [checked]="selectedType() === type.value"
+              (change)="selectedType.set(type.value)"
+              required
+            />
+            <span class="goal-card">
+              <span class="goal-name">{{ type.label }}</span>
+              <span class="goal-description">{{ type.description }}</span>
+            </span>
+          </label>
+        }
+      </fieldset>
+      <div class="dialog-actions">
+        <button class="secondary-button" type="button" (click)="goalDialog.close()">Cancel</button>
+        <button type="submit" [disabled]="!selectedType()">Next</button>
+      </div>
+    </form>
+  } @else {
+    <form class="count-goal-form" (submit)="$event.preventDefault()">
+      <div
+        class="reading-target"
+        [class.buying-target]="selectedType() === 'BuyBookCount'"
+        [class.percentage-target]="selectedType() === 'ReadBookPercentage'"
+      >
+        <label for="goal-count">{{
+          selectedType() === 'ReadBookPercentage'
+            ? 'I want my library read'
+            : selectedType() === 'BuyBookCount'
+              ? 'I want to buy less'
+              : 'I want to read'
+        }}</label>
+        @if (selectedType() === 'BuyBookCount') {
+          <span>than</span>
+        } @else if (selectedType() === 'ReadBookPercentage') {
+          <span>percentage to be at</span>
+        }
+        <input
+          id="goal-count"
+          name="num"
+          type="number"
+          min="0"
+          [attr.max]="selectedType() === 'ReadBookPercentage' ? 100 : null"
+          step="1"
+          [(ngModel)]="countDraft.num"
+          [attr.aria-label]="
+            selectedType() === 'ReadBookPercentage'
+              ? 'Percentage of library read'
+              : selectedType() === 'BuyBookCount'
+                ? 'Book purchase limit'
+                : selectedType() === 'PageCount'
+                  ? 'Number of pages'
+                  : 'Number of books'
+          "
+        />
+        <span>{{
+          selectedType() === 'ReadBookPercentage'
+            ? '%'
+            : selectedType() === 'PageCount'
+              ? 'pages'
+              : 'books'
+        }}</span>
+      </div>
+      @if (selectedType() === 'ReadBookPercentage') {
+        <div class="current-read-percentage" role="status">
+          @switch (percentageState()) {
+            @case ('loading') {
+              <p>Loading current read percentage…</p>
+            }
+            @case ('ready') {
+              <p>Current read percentage is {{ currentReadPercentage() }}%</p>
+            }
+            @case ('error') {
+              <p>Could not load current read percentage.</p>
+              <button class="secondary-button" type="button" (click)="loadReadPercentage()">
+                Try again
+              </button>
+            }
+          }
+        </div>
+      }
+      <div class="date-field">
+        <label for="goal-start-date">Start Date</label>
+        <input
+          id="goal-start-date"
+          name="startDate"
+          type="date"
+          [(ngModel)]="countDraft.startDate"
+        />
+      </div>
+      <div class="date-field">
+        <label for="goal-end-date">End Date</label>
+        <input id="goal-end-date" name="endDate" type="date" [(ngModel)]="countDraft.endDate" />
+      </div>
+      <div class="dialog-actions">
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="step.set('type'); dialogTitle.focus()"
+        >
+          Back
+        </button>
+        <button type="button">Submit</button>
+      </div>
+    </form>
+  }
 </dialog>

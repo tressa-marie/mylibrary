@@ -337,7 +337,8 @@ node backend/tests/shelves-api-test.mjs
 ## Goals API
 
 Goals are persisted in PostgreSQL with a server-generated `id`, date-only
-`startDate` and `endDate`, `goalType`, and an integer target `num`.
+`startDate` and `endDate`, `goalType`, an integer target `num`, and the boolean
+`includeNonLibraryBooks`.
 
 | Method | Endpoint | Behavior |
 | --- | --- | --- |
@@ -354,7 +355,8 @@ POST and PUT require all four fields:
   "startDate": "2026-01-01",
   "endDate": "2026-12-31",
   "goalType": "BookCount",
-  "num": 24
+  "num": 24,
+  "includeNonLibraryBooks": false
 }
 ```
 
@@ -362,6 +364,11 @@ Goal types are `BookCount`, `PageCount`, `BuyBookCount`, and
 `ReadBookPercentage`. End date must be on or after start date. `num` must be
 a nonnegative integer; percentage targets must be between 0 and 100 inclusive.
 Missing or invalid fields return `400`; invalid updates do not change saved goals.
+`includeNonLibraryBooks` is optional and defaults to `false` for existing goals
+and when omitted on POST or PUT. Set it to `true` on `BookCount` or `PageCount`
+goals to include books outside the library. Enabling it for `BuyBookCount` or
+`ReadBookPercentage` returns `400`, including when changing an existing goal's type.
+`AddGoalIncludeNonLibraryBooks` adds the column and a database constraint for this rule.
 The `AddGoals` EF migration creates the table and database constraints.
 Development startup applies it automatically; for other environments run
 `dotnet ef database update --project backend/MyLibrary.Api` with the intended

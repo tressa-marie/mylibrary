@@ -16,9 +16,10 @@ h1 {
     serif;
 }
 h2 {
-  margin: 0;
+  margin: 0 0 1.75rem;
   font:
-    500 1.5rem Georgia,
+    500 clamp(1.75rem, 5vw, 2.25rem)/1.2 'Playfair Display',
+    Georgia,
     serif;
 }
 button {
@@ -34,6 +35,10 @@ button {
 button:hover {
   background: #193829;
 }
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 dialog {
   width: min(32rem, calc(100% - 2rem));
   max-height: 85dvh;
@@ -48,29 +53,132 @@ dialog {
 dialog::backdrop {
   background: rgb(0 0 0 / 55%);
 }
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-}
-.close-button {
+.goal-types {
   display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  gap: 1.25rem;
+  min-width: 0;
+  margin: 0;
   padding: 0;
+  border: 0;
+}
+.goal-option {
+  position: relative;
+  cursor: pointer;
+}
+.goal-option input,
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #8b9288;
+  border-radius: 0.5rem;
+  background: #fffdf8;
+}
+.goal-option:hover .goal-card {
+  background: #f4efe5;
+}
+.goal-option input:checked + .goal-card {
+  border-color: #254d3c;
+  background: #e1ede3;
+  box-shadow: inset 0 0 0 1px #254d3c;
+}
+.goal-option input:focus-visible + .goal-card {
+  outline: 3px solid #b37520;
+  outline-offset: 4px;
+}
+.goal-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.goal-description {
+  color: #625f57;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 2.25rem;
+}
+.dialog-actions button {
+  flex: 1;
+}
+.secondary-button {
   background: transparent;
   color: #254d3c;
-  border-color: transparent;
-  font-size: 1.75rem;
 }
-.close-button:hover {
+.secondary-button:hover {
   background: #eae5da;
 }
-.dialog-body {
-  min-height: 12rem;
+.details-title {
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+.count-goal-form input {
+  min-width: 0;
+  border: 1px solid #8b9288;
+  border-radius: 0.4rem;
+  padding: 0.75rem;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+.reading-target {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  font-size: 1.15rem;
+}
+.reading-target input {
+  width: 5.5rem;
+}
+.buying-target label,
+.percentage-target label {
+  flex-basis: 100%;
+  text-align: center;
+}
+.current-read-percentage {
+  text-align: center;
+  font-size: 0.9rem;
+}
+.current-read-percentage p {
+  margin: 0.75rem 0 0;
+}
+.current-read-percentage button {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+}
+.date-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2.25rem;
+}
+.date-field label {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.date-field + .date-field {
+  margin-top: 1rem;
+}
+.date-field input {
+  width: min(100%, 16rem);
+}
+.count-goal-form .dialog-actions {
+  margin-top: 1.5rem;
 }
 @media (max-width: 600px) {
   .page-header {
